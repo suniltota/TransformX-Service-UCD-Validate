@@ -57,7 +57,7 @@ public class UCDValidator {
             List<UCDDeliverySpec> results = ucdSpecReader.readValues(loanType);
             Map<String, UCDDeliverySpec> uniqueIdBasedMap = new LinkedHashMap<>();
             Map<String, List<GroupByContainer>> requiredElementsMap = ucdSpecReader.groupByContainers(results, uniqueIdBasedMap, loanType);
-            validationErrors = xmlNodes.validateUCDDocument(doc, requiredElementsMap, uniqueIdBasedMap);
+            validationErrors = new ArrayList<>(xmlNodes.validateUCDDocument(doc, requiredElementsMap, uniqueIdBasedMap));
             
         } catch (Exception e) {
             e.printStackTrace();

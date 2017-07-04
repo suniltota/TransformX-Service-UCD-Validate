@@ -29,9 +29,12 @@ import com.actualize.mortgage.validation.services.UCDSpecReader;
 
 public class UCDSpecReaderImpl implements UCDSpecReader {
 
-    private String fileName = "ucd-delivery-specification-appendix-i.xlsx";
+    //private String fileName = "ucd-delivery-specification-appendix-i.xlsx";
+    private String fileName = "ucd-delivery-specification-appendix-i_new.xlsx";
+    
     private String purchaseSheetName = "UCD Purchase Spec";
     private String nonSellerSheetName = "UCD NonSeller Spec";
+    private boolean isPurchase = false;
     //private String splitDisclosureSheetName = "UCD Split Disclosure Spec";
     FormulaEvaluator evaluator = null;
     
@@ -43,15 +46,15 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
         Workbook workbook = new XSSFWorkbook(inputStream);
         String sheetname = nonSellerSheetName;
         if(loanType.equalsIgnoreCase("Purchase")) {
-            sheetname = purchaseSheetName;
+        	isPurchase = true;
         }
-        Sheet sheet = workbook.getSheet(sheetname);
+        Sheet sheet = workbook.getSheet("UCD Delivery Spec 01-31-17");
         evaluator = workbook.getCreationHelper().createFormulaEvaluator();
         List<UCDDeliverySpec> results = new ArrayList<UCDDeliverySpec>();
 
         for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
             Row row = sheet.getRow(i);
-            if(!getValue(row.getCell(5)).equals("") && !getValue(row.getCell(11)).equals("N/A")) {
+            if(!getValue(row.getCell(5)).equals("")) {
                 UCDDeliverySpec ucdDeliverySpec = new UCDDeliverySpec();
                 ucdDeliverySpec.setUniqueId(getValue(row.getCell(0)));
                 ucdDeliverySpec.setMismoxpath(getValue(row.getCell(5)));
@@ -59,16 +62,29 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
                 ucdDeliverySpec.setMismodatapointname(getValue(row.getCell(7)));
                 ucdDeliverySpec.setUcdsupportedenumerations(getValue(row.getCell(9)));
                 ucdDeliverySpec.setUcdFormat(getValue(row.getCell(10)));
-                ucdDeliverySpec.setConditionalityType(getValue(row.getCell(11)));
-                ucdDeliverySpec.setConditionalityDetails(getValue(row.getCell(12)));
-                ucdDeliverySpec.setCardinality(getValue(row.getCell(13)));
-                ucdDeliverySpec.setDeliveryNotes(getValue(row.getCell(14)));
-                ucdDeliverySpec.setConditionality(getValue(row.getCell(15)));
-                ucdDeliverySpec.setErrorMessage(getValue(row.getCell(16)));
+                
+                //19 Purchase, 20 Error Message
+                //21 Non Seller 22 Error Message
+                if(isPurchase && !getValue(row.getCell(11)).equals("N/A")){
+                	ucdDeliverySpec.setConditionalityType(getValue(row.getCell(11)));
+                    ucdDeliverySpec.setConditionalityDetails(getValue(row.getCell(12)));
+                    ucdDeliverySpec.setCardinality(getValue(row.getCell(13)));
+                    ucdDeliverySpec.setDeliveryNotes(getValue(row.getCell(14)));
+                	ucdDeliverySpec.setConditionality(getValue(row.getCell(19)));
+                	ucdDeliverySpec.setErrorMessage(getValue(row.getCell(20)));
+                }else if(!getValue(row.getCell(15)).equals("N/A")){
+                	ucdDeliverySpec.setConditionalityType(getValue(row.getCell(15)));
+                    ucdDeliverySpec.setConditionalityDetails(getValue(row.getCell(16)));
+                    ucdDeliverySpec.setCardinality(getValue(row.getCell(17)));
+                    ucdDeliverySpec.setDeliveryNotes(getValue(row.getCell(18)));
+                	ucdDeliverySpec.setConditionality(getValue(row.getCell(21)));
+                	ucdDeliverySpec.setErrorMessage(getValue(row.getCell(22)));
+                }
                 results.add(ucdDeliverySpec);
             }
         }
         inputStream.close();
+        workbook.close();
         System.out.println("End Read values ..."+ LocalDateTime.now());
         return results;
     }
