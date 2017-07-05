@@ -8,6 +8,7 @@ public class UCDValidationError {
     private String parentContainer;
     private String xpath;
     private String errorMsg;
+    private String lineNumber;
 
     @XmlElement(name = "DATAPOINT_NAME")
     public String getDataPointName() {
@@ -44,6 +45,14 @@ public class UCDValidationError {
     public void setErrorMsg(String errorMsg) {
         this.errorMsg = errorMsg;
     }
+    @XmlElement(name = "LINE_NUMBER")
+	public String getLineNumber() {
+		return lineNumber;
+	}
+
+	public void setLineNumber(String lineNumber) {
+		this.lineNumber = lineNumber;
+	}
 
 	@Override
 	public int hashCode() {

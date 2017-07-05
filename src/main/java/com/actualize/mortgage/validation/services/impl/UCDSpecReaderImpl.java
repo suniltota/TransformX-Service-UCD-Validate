@@ -112,7 +112,7 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
             if (type == cell.CELL_TYPE_FORMULA) {
                 return evaluator.evaluate(cell).getNumberValue() + "";
             } else if (cell.getStringCellValue().length() > 0) {
-                return cell.getStringCellValue();
+                return cell.getStringCellValue().trim();
             } else
                 return "";
         }

@@ -37,7 +37,12 @@ public class EvaluateXmlNodes {
     public NodeList getNodeList(Document document, String xmlPath) {
         XPathExpression expr;
         try {
-            expr = xpath.compile(xmlPath);
+        	if(xmlPath.contains("gse:")){
+        		String removeGSE =xmlPath.replaceAll("gse:", "");
+        		expr = xpath.compile(removeGSE);
+        	}else{
+        		expr = xpath.compile(xmlPath);
+        	}
             Object result = expr.evaluate(document, XPathConstants.NODESET);
             return (NodeList) result;
         } catch (Exception e) {
@@ -69,13 +74,16 @@ public class EvaluateXmlNodes {
             boolean isAnyNodeMatched = false;
             boolean hasDatapoints = false;
             DataPointDetails datapointDetails = null;
+            String lineNumber = null;
             for (GroupByContainer container : containerDetails) {
+            	lineNumber = null;
                 Map<String, DataPointDetails> datapoints = container.getDatapoints();
                 if(null!=datapoints) {
                     hasDatapoints = true;
                     int matchingCount = 0;
                     for (int i = 0; i < nodes.getLength(); i++) {
                         Node node = nodes.item(i);
+                        lineNumber = node.getUserData("lineNumber").toString();
                         int matchCount = 0;
                         for(String datapoint : datapoints.keySet()) {
                             datapointDetails = datapoints.get(datapoint);
@@ -89,13 +97,13 @@ public class EvaluateXmlNodes {
                                             if (datapointDetails.getEnumValues().contains(attribteValueInXml)) {
                                                 matchCount++;
                                             }else{
-                                            	setErrorMessage(validationErrors, key, datapointDetails);
+                                            	//setErrorMessage(validationErrors, key, datapointDetails);
                                             }
                                         } else {
                                             matchCount++;
                                         }
                                     }else{
-                                    	setErrorMessage(validationErrors, key, datapointDetails);
+                                    	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
                                     }
                                 } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
                                     if (attributesMap.containsKey(datapoint)) {
@@ -117,13 +125,13 @@ public class EvaluateXmlNodes {
                                             if (datapointDetails.getEnumValues().contains(elementVal)) {
                                                 matchCount++;
                                             }else{
-                                            	setErrorMessage(validationErrors, key, datapointDetails);
+                                            	//setErrorMessage(validationErrors, key, datapointDetails);
                                             }
                                         } else {
                                             matchCount++;
                                         }
                                     }else{
-                                    	setErrorMessage(validationErrors, key, datapointDetails);
+                                    	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
                                     }
                                 } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
                                     if (null != element) {
@@ -152,14 +160,14 @@ public class EvaluateXmlNodes {
                                             if (datapointDetails.getEnumValues().contains(attrVal)) {
                                                 matchCount++;
                                             }else{
-                                            	setErrorMessage(validationErrors, key, datapointDetails);
+                                            	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
                                             }
                                         } else {
                                         	//setErrorMessage(validationErrors, key, datapointDetails);
                                             matchCount++;
                                         }
                                     }else{
-                                    	setErrorMessage(validationErrors, key, datapointDetails);
+                                    	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
                                     }
                                 } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
                                     if (null != attrVal) {
@@ -209,7 +217,7 @@ public class EvaluateXmlNodes {
                 }
             }
             if(nodesLength > 0 && !isAnyNodeMatched && hasDatapoints) {
-            	setErrorMessage(validationErrors, key, datapointDetails);
+            	setErrorMessage(validationErrors, key, datapointDetails,lineNumber.toString());
                 /*UCDValidationError ucdValidationError = new UCDValidationError();
                 String[] xpathParts = key.split("/");
                 String parentContainer = xpathParts[xpathParts.length-1];
@@ -234,12 +242,13 @@ public class EvaluateXmlNodes {
         return nodes;
     }
     
-    private void setErrorMessage(Set<UCDValidationError> validationErrors, String key, DataPointDetails datapointDetails){
+    private void setErrorMessage(Set<UCDValidationError> validationErrors, String key, DataPointDetails datapointDetails, String lineNumber){
     	UCDValidationError ucdValidationError = new UCDValidationError();
         String[] xpathParts = key.split("/");
         String parentContainer = xpathParts[xpathParts.length-1];
         ucdValidationError.setParentContainer(parentContainer);
         ucdValidationError.setXpath(key);
+        ucdValidationError.setLineNumber(lineNumber);
         if(datapointDetails == null)
         	ucdValidationError.setErrorMsg("The "+ xpathParts +" container is not as per the UCD specification. Please verify all the datapoints.");
         else

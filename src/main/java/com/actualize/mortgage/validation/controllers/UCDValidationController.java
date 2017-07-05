@@ -12,6 +12,7 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 import com.actualize.mortgage.validation.domainmodels.UCDValidationErrors;
+import com.actualize.mortgage.validation.services.impl.PositionalXMLReader;
 import com.actualize.mortgage.validation.services.impl.UCDValidator;
 
 /**
@@ -40,8 +41,8 @@ public class UCDValidationController {
      */
 	@RequestMapping(value = "/cd/validate", method = { RequestMethod.POST }, produces = "application/xml")
 	public UCDValidationErrors validateUCDXML(@RequestBody String xmldoc) throws Exception {
-		Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-				.parse(new InputSource(new ByteArrayInputStream(xmldoc.getBytes("utf-8"))));
+		Document document = PositionalXMLReader.readXML(new ByteArrayInputStream(xmldoc.getBytes("utf-8")));
+				//.parse(new InputSource(new ByteArrayInputStream(xmldoc.getBytes("utf-8"))));
 		UCDValidator ucdValidator = new UCDValidator();
 		return ucdValidator.validateUCDXML(document);
 	}
