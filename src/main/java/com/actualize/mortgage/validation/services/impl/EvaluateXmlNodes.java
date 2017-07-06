@@ -13,6 +13,8 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
@@ -26,6 +28,8 @@ import com.actualize.mortgage.validation.domainmodels.UCDValidationError;
 
 public class EvaluateXmlNodes {
 
+	private static final Logger log = LogManager.getLogger(EvaluateXmlNodes.class);
+	
     private XPathFactory xpf = null;
     private XPath xpath = null;
 
@@ -64,10 +68,9 @@ public class EvaluateXmlNodes {
     }
     
     public Set<UCDValidationError> validateUCDDocument(Document doc, Map<String, List<GroupByContainer>> elementsMap, Map<String, UCDDeliverySpec> uniqueIdBasedMap) {
-        System.out.println(LocalDateTime.now());
+    	log.debug(LocalDateTime.now());
         Set<UCDValidationError> validationErrors = new HashSet<>();
         for (String key : elementsMap.keySet()) {
-            System.out.println("::::: map key ::::::" + key);
             List<GroupByContainer> containerDetails = elementsMap.get(key);
             NodeList nodes = getNodeList(doc, key);
             int nodesLength = nodes.getLength();
@@ -119,7 +122,6 @@ public class EvaluateXmlNodes {
                                 Element element = getChild((Element) node, datapoint);
                                 if("R".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
                                     if (null != element) {
-                                        System.out.println("Element :: " + element.getNodeName() + " = \"" + element.getTextContent() + "\"");
                                         String elementVal = element.getTextContent();
                                         if (null != datapointDetails.getEnumValues()) {
                                             if (datapointDetails.getEnumValues().contains(elementVal)) {
@@ -135,7 +137,6 @@ public class EvaluateXmlNodes {
                                     }
                                 } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
                                     if (null != element) {
-                                        System.out.println("Element :: " + element.getNodeName() + " = \"" + element.getTextContent() + "\"");
                                         String elementVal = element.getTextContent();
                                         if (null != datapointDetails.getEnumValues()) {
                                             if (datapointDetails.getEnumValues().contains(elementVal)) {
@@ -189,6 +190,7 @@ public class EvaluateXmlNodes {
                         UCDValidationError ucdValidationError = new UCDValidationError();
                         ucdValidationError.setParentContainer(container.getParentContainer());
                         ucdValidationError.setXpath(container.getXpath());
+                        ucdValidationError.setLineNumber(lineNumber);
                         StringBuffer sb = new StringBuffer();
                         sb.append("The datapoints of " + container.getParentContainer() + " are not as per specification. ");
                         sb.append("Please check the datapoints and the values ");
@@ -230,7 +232,7 @@ public class EvaluateXmlNodes {
                 validationErrors.add(ucdValidationError);*/
             }
         }
-        System.out.println(LocalDateTime.now());
+        log.debug(LocalDateTime.now());
         return validationErrors;
     }
     
@@ -260,7 +262,6 @@ public class EvaluateXmlNodes {
         if (null != nodeAttributes) {
             for (int j = 0; j < nodeAttributes.getLength(); j++) {
                 Node attr = nodeAttributes.item(j);
-                System.out.println("Attribute :: " + attr.getNodeName() + " = \"" + attr.getNodeValue() + "\"");
                 attributesMap.put(attr.getNodeName(), attr.getNodeValue());
             }
         }

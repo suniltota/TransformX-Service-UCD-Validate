@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.poi.hssf.usermodel.HSSFDateUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -22,6 +24,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.actualize.mortgage.validation.UCDValidationSpringBootApplication;
 import com.actualize.mortgage.validation.domainmodels.DataPointDetails;
 import com.actualize.mortgage.validation.domainmodels.GroupByContainer;
 import com.actualize.mortgage.validation.domainmodels.UCDDeliverySpec;
@@ -29,22 +32,24 @@ import com.actualize.mortgage.validation.services.UCDSpecReader;
 
 public class UCDSpecReaderImpl implements UCDSpecReader {
 
+	private static final Logger log = LogManager.getLogger(UCDSpecReaderImpl.class);
+	
     //private String fileName = "ucd-delivery-specification-appendix-i.xlsx";
     private String fileName = "ucd-delivery-specification-appendix-i_new.xlsx";
     
-    private String purchaseSheetName = "UCD Purchase Spec";
-    private String nonSellerSheetName = "UCD NonSeller Spec";
+    //private String purchaseSheetName = "UCD Purchase Spec";
+    //private String nonSellerSheetName = "UCD NonSeller Spec";
     private boolean isPurchase = false;
     //private String splitDisclosureSheetName = "UCD Split Disclosure Spec";
     FormulaEvaluator evaluator = null;
     
     @Override
     public List<UCDDeliverySpec> readValues(String loanType) throws IOException {
-        System.out.println("Start Read values ..."+ LocalDateTime.now());
+    	log.debug("Start Read values ..."+ LocalDateTime.now());
         // Get file from resources folder
         InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
         Workbook workbook = new XSSFWorkbook(inputStream);
-        String sheetname = nonSellerSheetName;
+        //String sheetname = nonSellerSheetName;
         if(loanType.equalsIgnoreCase("Purchase")) {
         	isPurchase = true;
         }
@@ -72,20 +77,21 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
                     ucdDeliverySpec.setDeliveryNotes(getValue(row.getCell(14)));
                 	ucdDeliverySpec.setConditionality(getValue(row.getCell(19)));
                 	ucdDeliverySpec.setErrorMessage(getValue(row.getCell(20)));
-                }else if(!getValue(row.getCell(15)).equals("N/A")){
+                	results.add(ucdDeliverySpec);
+                }else if(!isPurchase && !getValue(row.getCell(15)).equals("N/A")){
                 	ucdDeliverySpec.setConditionalityType(getValue(row.getCell(15)));
                     ucdDeliverySpec.setConditionalityDetails(getValue(row.getCell(16)));
                     ucdDeliverySpec.setCardinality(getValue(row.getCell(17)));
                     ucdDeliverySpec.setDeliveryNotes(getValue(row.getCell(18)));
                 	ucdDeliverySpec.setConditionality(getValue(row.getCell(21)));
                 	ucdDeliverySpec.setErrorMessage(getValue(row.getCell(22)));
+                	results.add(ucdDeliverySpec);
                 }
-                results.add(ucdDeliverySpec);
             }
         }
         inputStream.close();
         workbook.close();
-        System.out.println("End Read values ..."+ LocalDateTime.now());
+        log.debug("End Read values ..."+ LocalDateTime.now());
         return results;
     }
     
@@ -160,12 +166,13 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
     
     public Map<String, List<GroupByContainer>> groupByContainers(List<UCDDeliverySpec> ucdDeliverySpecs, Map<String, UCDDeliverySpec> uniqueIdBasedMap, String loanType) {
 
-        System.out.println("Start Group containers .." +LocalDateTime.now());
+    	log.debug("Start Group containers .." +LocalDateTime.now());
         Map<String, List<GroupByContainer>> groupingByContainerMap = new LinkedHashMap<>();
         for (UCDDeliverySpec ucdDeliverySpec : ucdDeliverySpecs) {
             if (!uniqueIdBasedMap.containsKey(ucdDeliverySpec.getUniqueId()))
                 uniqueIdBasedMap.put(ucdDeliverySpec.getUniqueId(), ucdDeliverySpec);
-            if (!"N/A".equalsIgnoreCase(ucdDeliverySpec.getConditionalityType()) && !ucdDeliverySpec.getMismoxpath().isEmpty()) {
+            if (!"O".equalsIgnoreCase(ucdDeliverySpec.getConditionalityType()) && !"N/A".equalsIgnoreCase(ucdDeliverySpec.getConditionalityType()) && !ucdDeliverySpec.getMismoxpath().isEmpty()) {
+            	
                 List<GroupByContainer> groupByContainers = groupingByContainerMap.get(ucdDeliverySpec.getMismoxpath());
                 if (null == groupByContainers) {
                     groupByContainers = new ArrayList<>();
@@ -205,7 +212,7 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
             }
             groupingByContainerMap.put(entry.getKey(), containersGrp);
         }
-        System.out.println("End Group containers .. "+LocalDateTime.now());
+        log.debug("End Group containers .. "+LocalDateTime.now());
         return groupingByContainerMap;
     }
     

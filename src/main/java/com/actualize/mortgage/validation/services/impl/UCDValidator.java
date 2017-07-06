@@ -1,7 +1,6 @@
 package com.actualize.mortgage.validation.services.impl;
 
 import java.io.File;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,6 +8,8 @@ import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.w3c.dom.Document;
 
 import com.actualize.mortgage.validation.domainmodels.GroupByContainer;
@@ -18,7 +19,7 @@ import com.actualize.mortgage.validation.domainmodels.UCDValidationErrors;
 import com.actualize.mortgage.validation.services.UCDSpecReader;
 
 public class UCDValidator {
-    
+	private static final Logger log = LogManager.getLogger(UCDValidator.class);
     /*public static void main(String[] args) {
         UCDSpecReader ucdSpecReader = new UCDSpecReaderImpl();
         EvaluateXmlNodes xmlNodes = new EvaluateXmlNodes();
@@ -60,7 +61,7 @@ public class UCDValidator {
             validationErrors = new ArrayList<>(xmlNodes.validateUCDDocument(doc, requiredElementsMap, uniqueIdBasedMap));
             
         } catch (Exception e) {
-            e.printStackTrace();
+        	log.error("Validate UCD XML :" + e.getMessage());
         }
         ucdValidationErrors.setValidationErrors(validationErrors);
         return ucdValidationErrors;
