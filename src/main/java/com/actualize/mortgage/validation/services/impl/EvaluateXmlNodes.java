@@ -2,6 +2,7 @@ package com.actualize.mortgage.validation.services.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,6 +82,7 @@ public class EvaluateXmlNodes {
             for (GroupByContainer container : containerDetails) {
             	lineNumber = null;
                 Map<String, DataPointDetails> datapoints = container.getDatapoints();
+                //Map<String, DataPointDetails> rDataPoints = new HashMap<>();
                 if(null!=datapoints) {
                     hasDatapoints = true;
                     int matchingCount = 0;
@@ -150,7 +152,9 @@ public class EvaluateXmlNodes {
                                                 matchCount++;
                                         }
                                     } else {
-                                        matchCount++;
+                                    	boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(null, node, datapointDetails, container, doc, uniqueIdBasedMap);
+                                        if(!isValid)
+                                            matchCount++;
                                     }
                                 }
                             } else if(datapointDetails.isDatapointAttribute()) {
@@ -219,7 +223,7 @@ public class EvaluateXmlNodes {
                 }
             }
             if(nodesLength > 0 && !isAnyNodeMatched && hasDatapoints) {
-            	setErrorMessage(validationErrors, key, datapointDetails,lineNumber.toString());
+            	setErrorMessage(validationErrors, key, datapointDetails, lineNumber.toString());
                 /*UCDValidationError ucdValidationError = new UCDValidationError();
                 String[] xpathParts = key.split("/");
                 String parentContainer = xpathParts[xpathParts.length-1];
@@ -251,6 +255,7 @@ public class EvaluateXmlNodes {
         ucdValidationError.setParentContainer(parentContainer);
         ucdValidationError.setXpath(key);
         ucdValidationError.setLineNumber(lineNumber);
+        ucdValidationError.setDataPointName(datapointDetails.getDatapointName());
         if(datapointDetails == null)
         	ucdValidationError.setErrorMsg("The "+ xpathParts +" container is not as per the UCD specification. Please verify all the datapoints.");
         else

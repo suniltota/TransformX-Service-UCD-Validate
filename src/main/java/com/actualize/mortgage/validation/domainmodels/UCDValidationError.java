@@ -58,6 +58,8 @@ public class UCDValidationError {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((dataPointName == null) ? 0 : dataPointName.hashCode());
+		result = prime * result + ((lineNumber == null) ? 0 : lineNumber.hashCode());
 		result = prime * result + ((xpath == null) ? 0 : xpath.hashCode());
 		return result;
 	}
@@ -71,6 +73,16 @@ public class UCDValidationError {
 		if (getClass() != obj.getClass())
 			return false;
 		UCDValidationError other = (UCDValidationError) obj;
+		if (dataPointName == null) {
+			if (other.dataPointName != null)
+				return false;
+		} else if (!dataPointName.equals(other.dataPointName))
+			return false;
+		if (lineNumber == null) {
+			if (other.lineNumber != null)
+				return false;
+		} else if (!lineNumber.equals(other.lineNumber))
+			return false;
 		if (xpath == null) {
 			if (other.xpath != null)
 				return false;

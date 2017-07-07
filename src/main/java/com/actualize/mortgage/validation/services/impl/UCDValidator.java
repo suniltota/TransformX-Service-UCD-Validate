@@ -61,7 +61,7 @@ public class UCDValidator {
             validationErrors = new ArrayList<>(xmlNodes.validateUCDDocument(doc, requiredElementsMap, uniqueIdBasedMap));
             
         } catch (Exception e) {
-        	log.error("Validate UCD XML :" + e.getMessage());
+        	log.error("Validate UCD XML :" + e);
         }
         ucdValidationErrors.setValidationErrors(validationErrors);
         return ucdValidationErrors;
