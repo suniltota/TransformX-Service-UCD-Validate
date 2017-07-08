@@ -2,14 +2,14 @@ package com.actualize.mortgage.validation.controllers;
 
 import java.io.ByteArrayInputStream;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.w3c.dom.Document;
-import org.xml.sax.InputSource;
 
 import com.actualize.mortgage.validation.domainmodels.UCDValidationErrors;
 import com.actualize.mortgage.validation.services.impl.PositionalXMLReader;
@@ -27,9 +27,11 @@ import com.actualize.mortgage.validation.services.impl.UCDValidator;
 @RequestMapping("/actualize/transformx/services/ucd")
 public class UCDValidationController {
 	
+	private static final Logger LOG = LogManager.getLogger(UCDValidationController.class);
 	
 	@RequestMapping(value = "/validate/ping", method = { RequestMethod.GET })
     public String status() throws Exception {
+		LOG.info("user "+SecurityContextHolder.getContext().getAuthentication().getName()+" used Service: ping Validation Service");
         return "The service for validating UCD XML is running and ready to accept your request";
     }
 	/**
@@ -41,6 +43,7 @@ public class UCDValidationController {
      */
 	@RequestMapping(value = "/cd/validate", method = { RequestMethod.POST }, produces = "application/xml")
 	public UCDValidationErrors validateUCDXML(@RequestBody String xmldoc) throws Exception {
+		LOG.info("user "+SecurityContextHolder.getContext().getAuthentication().getName()+" used Service: Validate UCD XML");
 		Document document = PositionalXMLReader.readXML(new ByteArrayInputStream(xmldoc.getBytes("utf-8")));
 				//.parse(new InputSource(new ByteArrayInputStream(xmldoc.getBytes("utf-8"))));
 		UCDValidator ucdValidator = new UCDValidator();
