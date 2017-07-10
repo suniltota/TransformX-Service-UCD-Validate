@@ -13,7 +13,8 @@ public class DataPointDetails {
     private String validationRequired;
     private Set<String> enumValues;
     private String conditionalityType;
-
+    private boolean isValid = false;
+    private String lineNumber;
     /**
      * @return the datapointName
      */
@@ -222,5 +223,21 @@ public class DataPointDetails {
             return false;
         return true;
     }
+
+	public boolean isValid() {
+		return isValid;
+	}
+
+	public void setValid(boolean isValid) {
+		this.isValid = isValid;
+	}
+
+	public String getLineNumber() {
+		return lineNumber;
+	}
+
+	public void setLineNumber(String lineNumber) {
+		this.lineNumber = lineNumber;
+	}
 
 }

@@ -74,9 +74,9 @@ public class EvaluateXmlNodes {
         for (String key : elementsMap.keySet()) {
             List<GroupByContainer> containerDetails = elementsMap.get(key);
             NodeList nodes = getNodeList(doc, key);
-            int nodesLength = nodes.getLength();
-            boolean isAnyNodeMatched = false;
-            boolean hasDatapoints = false;
+            //int nodesLength = nodes.getLength();
+           // boolean isAnyNodeMatched = false;
+            //boolean hasDatapoints = false;
             DataPointDetails datapointDetails = null;
             String lineNumber = null;
             for (GroupByContainer container : containerDetails) {
@@ -84,7 +84,7 @@ public class EvaluateXmlNodes {
                 Map<String, DataPointDetails> datapoints = container.getDatapoints();
                 //Map<String, DataPointDetails> rDataPoints = new HashMap<>();
                 if(null!=datapoints) {
-                    hasDatapoints = true;
+                    //hasDatapoints = true;
                     int matchingCount = 0;
                     for (int i = 0; i < nodes.getLength(); i++) {
                         Node node = nodes.item(i);
@@ -92,6 +92,7 @@ public class EvaluateXmlNodes {
                         int matchCount = 0;
                         for(String datapoint : datapoints.keySet()) {
                             datapointDetails = datapoints.get(datapoint);
+                            datapointDetails.setLineNumber(lineNumber);
                             if(datapointDetails.isContainerAttribute()) {
                                 NamedNodeMap nodeAttributes = node.getAttributes();
                                 Map<String, String> attributesMap = getAttributesMap(nodeAttributes);
@@ -101,11 +102,13 @@ public class EvaluateXmlNodes {
                                         if (null != datapointDetails.getEnumValues()) {
                                             if (datapointDetails.getEnumValues().contains(attribteValueInXml)) {
                                                 matchCount++;
+                                                datapointDetails.setValid(true);
                                             }else{
                                             	//setErrorMessage(validationErrors, key, datapointDetails);
                                             }
                                         } else {
                                             matchCount++;
+                                            datapointDetails.setValid(true);
                                         }
                                     }else{
                                     	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
@@ -114,10 +117,13 @@ public class EvaluateXmlNodes {
                                     if (attributesMap.containsKey(datapoint)) {
                                         String attribteValueInXml = attributesMap.get(datapoint);
                                         boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(attribteValueInXml, node, datapointDetails, container, doc, uniqueIdBasedMap);
-                                        if(isValid)
+                                        if(isValid){
                                             matchCount++;
+                                            datapointDetails.setValid(true);
+                                        }
                                     } else {
                                         matchCount++;
+                                        datapointDetails.setValid(true);
                                     }
                                 }
                             } else if(datapointDetails.isDatapoint()) {
@@ -128,11 +134,13 @@ public class EvaluateXmlNodes {
                                         if (null != datapointDetails.getEnumValues()) {
                                             if (datapointDetails.getEnumValues().contains(elementVal)) {
                                                 matchCount++;
+                                                datapointDetails.setValid(true);
                                             }else{
                                             	//setErrorMessage(validationErrors, key, datapointDetails);
                                             }
                                         } else {
                                             matchCount++;
+                                            datapointDetails.setValid(true);
                                         }
                                     }else{
                                     	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
@@ -143,18 +151,24 @@ public class EvaluateXmlNodes {
                                         if (null != datapointDetails.getEnumValues()) {
                                             if (datapointDetails.getEnumValues().contains(elementVal)) {
                                                 boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(elementVal, node, datapointDetails, container, doc, uniqueIdBasedMap);
-                                                if(isValid)
+                                                if(isValid){
                                                     matchCount++;
+                                                    datapointDetails.setValid(true);
+                                                }
                                             }
                                         } else {
                                             boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(elementVal, node, datapointDetails, container, doc, uniqueIdBasedMap);
-                                            if(isValid)
+                                            if(isValid){
                                                 matchCount++;
+                                                datapointDetails.setValid(true);
+                                            }
                                         }
                                     } else {
                                     	boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(null, node, datapointDetails, container, doc, uniqueIdBasedMap);
-                                        if(!isValid)
+                                        if(!isValid){
                                             matchCount++;
+                                            datapointDetails.setValid(true);
+                                        }
                                     }
                                 }
                             } else if(datapointDetails.isDatapointAttribute()) {
@@ -164,12 +178,14 @@ public class EvaluateXmlNodes {
                                         if (null != datapointDetails.getEnumValues()) {
                                             if (datapointDetails.getEnumValues().contains(attrVal)) {
                                                 matchCount++;
+                                                datapointDetails.setValid(true);
                                             }else{
                                             	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
                                             }
                                         } else {
                                         	//setErrorMessage(validationErrors, key, datapointDetails);
                                             matchCount++;
+                                            datapointDetails.setValid(true);
                                         }
                                     }else{
                                     	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
@@ -177,41 +193,33 @@ public class EvaluateXmlNodes {
                                 } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
                                     if (null != attrVal) {
                                         boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(attrVal, node, datapointDetails, container, doc, uniqueIdBasedMap);
-                                        if(isValid)
+                                        if(isValid){
                                             matchCount++;
+                                            datapointDetails.setValid(true);
+                                        }
                                     } else {
                                         matchCount++;
+                                        datapointDetails.setValid(true);
                                     }
                                 }
                             }
                         }
                         if(matchCount == datapoints.size()) {
                             matchingCount++;
-                            isAnyNodeMatched = true;
+                           // isAnyNodeMatched = true;
+                            datapointDetails.setValid(true);
+                            datapointDetails.setLineNumber(lineNumber);
                         }
                     }
                     if (container.getMinOccurs() > matchingCount) {
-                        UCDValidationError ucdValidationError = new UCDValidationError();
-                        ucdValidationError.setParentContainer(container.getParentContainer());
-                        ucdValidationError.setXpath(container.getXpath());
-                        ucdValidationError.setLineNumber(lineNumber);
-                        StringBuffer sb = new StringBuffer();
-                        sb.append("The datapoints of " + container.getParentContainer() + " are not as per specification. ");
-                        sb.append("Please check the datapoints and the values ");
-                        int iteratorCount = 0;
                         for (String attr : container.getDatapoints().keySet()) {
-                            iteratorCount++;
                             DataPointDetails attributeDetails = container.getDatapoints().get(attr);
-                            sb.append(attr);
-                            if (null != attributeDetails.getEnumValues())
-                                sb.append(" - " + attributeDetails.getEnumValues().toString().substring(1, attributeDetails.getEnumValues().toString().length() - 1));
-                            if (iteratorCount < container.getDatapoints().size())
-                                sb.append(" and ");
+                            if(!attributeDetails.isValid()){
+                            	setErrorMessage(validationErrors, key, attributeDetails, attributeDetails.getLineNumber());
+                            }   
                         }
-                        ucdValidationError.setErrorMsg(sb.toString());
-                        validationErrors.add(ucdValidationError);
                     }
-                } else if (container.getMinOccurs() > nodesLength) {
+                } /*else if (container.getMinOccurs() > nodesLength) {
                     UCDValidationError ucdValidationError = new UCDValidationError();
                     ucdValidationError.setParentContainer(container.getParentContainer());
                     ucdValidationError.setXpath(container.getXpath());
@@ -220,10 +228,10 @@ public class EvaluateXmlNodes {
                     else
                         ucdValidationError.setErrorMsg("The cardinality of "+container.getParentContainer() +" is not as per the UCD specification. Please verify.");
                     validationErrors.add(ucdValidationError);
-                }
+                }*/
             }
-            if(nodesLength > 0 && !isAnyNodeMatched && hasDatapoints) {
-            	setErrorMessage(validationErrors, key, datapointDetails, lineNumber.toString());
+           // if(nodesLength > 0 && !isAnyNodeMatched && hasDatapoints) {
+            	//setErrorMessage(validationErrors, key, datapointDetails, lineNumber.toString());
                 /*UCDValidationError ucdValidationError = new UCDValidationError();
                 String[] xpathParts = key.split("/");
                 String parentContainer = xpathParts[xpathParts.length-1];
@@ -234,7 +242,7 @@ public class EvaluateXmlNodes {
                 else
                 	ucdValidationError.setErrorMsg("The "+ parentContainer +": " + datapointDetails.getDatapointErrorMessage());
                 validationErrors.add(ucdValidationError);*/
-            }
+            //}
         }
         log.debug(LocalDateTime.now());
         return validationErrors;
