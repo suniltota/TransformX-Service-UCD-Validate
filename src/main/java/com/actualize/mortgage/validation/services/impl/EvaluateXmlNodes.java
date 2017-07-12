@@ -168,6 +168,8 @@ public class EvaluateXmlNodes {
                                         if(!isValid){
                                             matchCount++;
                                             datapointDetails.setValid(true);
+                                        }else{
+                                        	setErrorMessage(validationErrors, key, datapointDetails, datapointDetails.getLineNumber());
                                         }
                                     }
                                 }
@@ -196,6 +198,8 @@ public class EvaluateXmlNodes {
                                         if(isValid){
                                             matchCount++;
                                             datapointDetails.setValid(true);
+                                        }else{
+                                        	setErrorMessage(validationErrors, key, datapointDetails, datapointDetails.getLineNumber());
                                         }
                                     } else {
                                         matchCount++;
