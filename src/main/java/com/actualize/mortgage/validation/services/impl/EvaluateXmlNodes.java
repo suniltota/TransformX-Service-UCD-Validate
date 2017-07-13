@@ -267,11 +267,14 @@ public class EvaluateXmlNodes {
         ucdValidationError.setParentContainer(parentContainer);
         ucdValidationError.setXpath(key);
         ucdValidationError.setLineNumber(lineNumber);
-        ucdValidationError.setDataPointName(datapointDetails.getDatapointName());
         if(datapointDetails == null)
         	ucdValidationError.setErrorMsg("The "+ xpathParts +" container is not as per the UCD specification. Please verify all the datapoints.");
-        else
+        else{
+        	ucdValidationError.setDataPointName(datapointDetails.getDatapointName());
         	ucdValidationError.setErrorMsg(datapointDetails.getDatapointErrorMessage());
+        	ucdValidationError.setUiHeader(datapointDetails.getUiHeader());
+        	ucdValidationError.setUiLabel(datapointDetails.getUiLabel());
+        }
         validationErrors.add(ucdValidationError);
     }
     public static Map<String, String> getAttributesMap(NamedNodeMap nodeAttributes) {

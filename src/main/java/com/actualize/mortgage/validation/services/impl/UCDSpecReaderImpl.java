@@ -67,7 +67,8 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
                 ucdDeliverySpec.setMismodatapointname(getValue(row.getCell(7)));
                 ucdDeliverySpec.setUcdsupportedenumerations(getValue(row.getCell(9)));
                 ucdDeliverySpec.setUcdFormat(getValue(row.getCell(10)));
-                
+                ucdDeliverySpec.setUiLabel(getValue(row.getCell(23)));
+                ucdDeliverySpec.setUiHeader(getValue(row.getCell(24)));
                 //19 Purchase, 20 Error Message
                 //21 Non Seller 22 Error Message
                 if(isPurchase && !getValue(row.getCell(11)).equals("N/A")){
@@ -235,6 +236,8 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
         ucdDataPointDetails.setDatapointErrorMessage(ucdDeliverySpec.getErrorMessage());
         ucdDataPointDetails.setValidationRequired(ucdDeliverySpec.getValidationRequired());
         ucdDataPointDetails.setConditionalityType(ucdDeliverySpec.getConditionalityType());
+        ucdDataPointDetails.setUiHeader(ucdDeliverySpec.getUiHeader());
+        ucdDataPointDetails.setUiLabel(ucdDeliverySpec.getUiLabel());
         if (ucdDeliverySpec.getUcdFormat().equalsIgnoreCase("Enumerated") || !ucdDeliverySpec.getUcdsupportedenumerations().isEmpty()) {
             Set<String> enumValues = ucdDataPointDetails.getEnumValues();
             if (null == enumValues)

@@ -15,6 +15,8 @@ public class DataPointDetails {
     private String conditionalityType;
     private boolean isValid = false;
     private String lineNumber;
+    private String uiLabel;
+    private String uiHeader;
     /**
      * @return the datapointName
      */
@@ -238,6 +240,22 @@ public class DataPointDetails {
 
 	public void setLineNumber(String lineNumber) {
 		this.lineNumber = lineNumber;
+	}
+
+	public String getUiLabel() {
+		return uiLabel;
+	}
+
+	public void setUiLabel(String uiLabel) {
+		this.uiLabel = uiLabel;
+	}
+
+	public String getUiHeader() {
+		return uiHeader;
+	}
+
+	public void setUiHeader(String uiHeader) {
+		this.uiHeader = uiHeader;
 	}
 
 }

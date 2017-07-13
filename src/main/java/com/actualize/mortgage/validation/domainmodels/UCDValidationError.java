@@ -9,7 +9,9 @@ public class UCDValidationError {
     private String xpath;
     private String errorMsg;
     private String lineNumber;
-
+    private String uiLabel;
+    private String uiHeader;
+    
     @XmlElement(name = "DATAPOINT_NAME")
     public String getDataPointName() {
         return dataPointName;
@@ -52,6 +54,23 @@ public class UCDValidationError {
 
 	public void setLineNumber(String lineNumber) {
 		this.lineNumber = lineNumber;
+	}
+	
+	@XmlElement(name = "UI_LABEL")
+	public String getUiLabel() {
+		return uiLabel;
+	}
+
+	public void setUiLabel(String uiLabel) {
+		this.uiLabel = uiLabel;
+	}
+	@XmlElement(name = "UI_HEADER")
+	public String getUiHeader() {
+		return uiHeader;
+	}
+
+	public void setUiHeader(String uiHeader) {
+		this.uiHeader = uiHeader;
 	}
 
 	@Override

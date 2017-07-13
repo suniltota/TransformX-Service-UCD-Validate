@@ -21,6 +21,8 @@ public class UCDDeliverySpec implements Serializable {
     private String conditionality;
     private String errorMessage;
     private String validationRequired;
+    private String uiLabel;
+    private String uiHeader;
     
     private List<String> error = new ArrayList<>();
 
@@ -230,4 +232,20 @@ public class UCDDeliverySpec implements Serializable {
     public String toString() {
         return getError().toString();
     }
+
+	public String getUiLabel() {
+		return uiLabel;
+	}
+
+	public void setUiLabel(String uiLabel) {
+		this.uiLabel = uiLabel;
+	}
+
+	public String getUiHeader() {
+		return uiHeader;
+	}
+
+	public void setUiHeader(String uiHeader) {
+		this.uiHeader = uiHeader;
+	}
 }
