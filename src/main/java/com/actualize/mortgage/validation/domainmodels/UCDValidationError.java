@@ -8,6 +8,7 @@ public class UCDValidationError {
     private String parentContainer;
     private String xpath;
     private String errorMsg;
+    private String uiErrorMsg;
     private String lineNumber;
     private String uiLabel;
     private String uiHeader;
@@ -47,6 +48,16 @@ public class UCDValidationError {
     public void setErrorMsg(String errorMsg) {
         this.errorMsg = errorMsg;
     }
+    
+    @XmlElement(name = "UI_ERROR_MESSAGE")
+    public String getUIErrorMsg() {
+        return uiErrorMsg;
+    }
+
+    public void setUIErrorMsg(String uiErrorMsg) {
+        this.uiErrorMsg = uiErrorMsg;
+    }
+    
     @XmlElement(name = "LINE_NUMBER")
 	public String getLineNumber() {
 		return lineNumber;

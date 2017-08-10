@@ -48,18 +48,17 @@ public class UCDValidator {
         return DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(ucdXml);
     }
     
-    public UCDValidationErrors validateUCDXML(Document doc) throws Exception {
+    public UCDValidationErrors validateUCDXML(Document doc, boolean fromWebUI) throws Exception {
         UCDValidationErrors ucdValidationErrors = new UCDValidationErrors();
         List<UCDValidationError> validationErrors = new ArrayList<>();
         UCDSpecReader ucdSpecReader = new UCDSpecReaderImpl();
         EvaluateXmlNodes xmlNodes = new EvaluateXmlNodes();
         try {
-            String loanType = xmlNodes.getValue(doc, "MESSAGE/DOCUMENT_SETS/DOCUMENT_SET/DOCUMENTS/DOCUMENT/DEAL_SETS/DEAL_SET/DEALS/DEAL/LOANS/LOAN/TERMS_OF_LOAN/LoanPurposeType"); 
+            String loanType = xmlNodes.getValue(doc, "MESSAGE/DOCUMENT_SETS/DOCUMENT_SET/DOCUMENTS/DOCUMENT/DEAL_SETS/DEAL_SET/DEALS/DEAL/LOANS/LOAN/TERMS_OF_LOAN/LoanPurposeType");
             List<UCDDeliverySpec> results = ucdSpecReader.readValues(loanType);
             Map<String, UCDDeliverySpec> uniqueIdBasedMap = new LinkedHashMap<>();
             Map<String, List<GroupByContainer>> requiredElementsMap = ucdSpecReader.groupByContainers(results, uniqueIdBasedMap, loanType);
-            validationErrors = new ArrayList<>(xmlNodes.validateUCDDocument(doc, requiredElementsMap, uniqueIdBasedMap));
-            
+            validationErrors = new ArrayList<>(xmlNodes.validateUCDDocument(doc, requiredElementsMap, uniqueIdBasedMap, fromWebUI));
         } catch (Exception e) {
         	e.printStackTrace();
         	log.error("Validate UCD XML :" + e);

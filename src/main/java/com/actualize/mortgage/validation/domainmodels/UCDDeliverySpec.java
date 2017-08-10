@@ -19,10 +19,11 @@ public class UCDDeliverySpec implements Serializable {
     private String cardinality;
     private String deliveryNotes;
     private String conditionality;
-    private String errorMessage;
+    private String xmlErrorMessage;
+    private String uiErrorMessage;
     private String validationRequired;
-    private String uiLabel;
-    private String uiHeader;
+    /*private String uiLabel;
+    private String uiHeader;*/
     
     private List<String> error = new ArrayList<>();
 
@@ -181,17 +182,31 @@ public class UCDDeliverySpec implements Serializable {
         this.conditionality = conditionality;
     }
     /**
-     * @return the errorMessage
+     * @return the xmlErrorMessage
      */
-    public String getErrorMessage() {
-        return errorMessage;
+    public String getXmlErrorMessage() {
+        return xmlErrorMessage;
     }
 
     /**
-     * @param errorMessage the errorMessage to set
+     * @param xmlErrorMessage the xmlErrorMessage to set
      */
-    public void setErrorMessage(String errorMessage) {
-        this.errorMessage = errorMessage;
+    public void setXmlErrorMessage(String xmlErrorMessage) {
+        this.xmlErrorMessage = xmlErrorMessage;
+    }
+    
+    /**
+     * @return the uiErrorMessage
+     */
+    public String getUiErrorMessage() {
+        return uiErrorMessage;
+    }
+
+    /**
+     * @param uiErrorMessage the uiErrorMessage to set
+     */
+    public void setUiErrorMessage(String uiErrorMessage) {
+        this.uiErrorMessage = uiErrorMessage;
     }
 
     /**
@@ -233,7 +248,7 @@ public class UCDDeliverySpec implements Serializable {
         return getError().toString();
     }
 
-	public String getUiLabel() {
+    /*	public String getUiLabel() {
 		return uiLabel;
 	}
 
@@ -247,5 +262,5 @@ public class UCDDeliverySpec implements Serializable {
 
 	public void setUiHeader(String uiHeader) {
 		this.uiHeader = uiHeader;
-	}
+	}*/
 }

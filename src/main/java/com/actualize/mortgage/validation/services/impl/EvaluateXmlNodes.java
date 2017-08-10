@@ -2,9 +2,9 @@ package com.actualize.mortgage.validation.services.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +24,7 @@ import org.w3c.dom.NodeList;
 
 import com.actualize.mortgage.validation.domainmodels.DataPointDetails;
 import com.actualize.mortgage.validation.domainmodels.GroupByContainer;
+import com.actualize.mortgage.validation.domainmodels.NodeWiseMatchedDatapoints;
 import com.actualize.mortgage.validation.domainmodels.UCDDeliverySpec;
 import com.actualize.mortgage.validation.domainmodels.UCDValidationError;
 
@@ -68,10 +69,164 @@ public class EvaluateXmlNodes {
         return null;
     }
     
-    public Set<UCDValidationError> validateUCDDocument(Document doc, Map<String, List<GroupByContainer>> elementsMap, Map<String, UCDDeliverySpec> uniqueIdBasedMap) {
+    public Set<UCDValidationError> validateUCDDocument(Document doc, Map<String, List<GroupByContainer>> elementsMap, Map<String, UCDDeliverySpec> uniqueIdBasedMap, boolean fromWebUI) {
     	log.debug(LocalDateTime.now());
-        Set<UCDValidationError> validationErrors = new HashSet<>();
+        Set<UCDValidationError> validationErrors = new LinkedHashSet<>();
         for (String key : elementsMap.keySet()) {
+        	System.out.println("::::: map key ::::::" + key);
+            List<GroupByContainer> containerDetails = elementsMap.get(key);
+            NodeList nodes = getNodeList(doc, key);
+        	int minOccur = 0;
+            int maxOccur = 0;
+            if(nodes.getLength()>0) {
+            	for (int i = 0; i < nodes.getLength(); i++) {
+            		List<NodeWiseMatchedDatapoints> noOfDatapointsMatchedPerNode = new ArrayList<>(nodes.getLength());
+            		boolean nodeMatchedWithContainer = false;
+            		Node node = nodes.item(i);
+            		String lineNumber = node.getUserData("lineNumber").toString();
+            		for (GroupByContainer container : containerDetails) {
+            			NodeWiseMatchedDatapoints nodeWiseMatchedDatapoints = new NodeWiseMatchedDatapoints();
+            			minOccur = minOccur + container.getMinOccurs();
+                    	maxOccur = maxOccur + container.getMaxOccurs();
+						if (null != container.getDatapoints() && container.getDatapoints().size() > 0) {
+            				Map<String, DataPointDetails> datapoints =  new LinkedHashMap<String, DataPointDetails>(container.getDatapoints());
+            				List<DataPointDetails> dataPointsWithDetails = new ArrayList<>();
+            				int matchCount = 0;
+            				for(String datapoint : datapoints.keySet()) {
+                               DataPointDetails datapointDetails = datapoints.get(datapoint);
+                                datapointDetails.setLineNumber(lineNumber);
+                                if(datapointDetails.isContainerAttribute()) {
+                                    NamedNodeMap nodeAttributes = node.getAttributes();
+                                    Map<String, String> attributesMap = getAttributesMap(nodeAttributes);
+                                    String attribteValueInXml = attributesMap.get(datapoint);
+                                    if("R".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
+                                        if (null != datapointDetails.getEnumValues()) {
+                                            if (datapointDetails.getEnumValues().contains(attribteValueInXml)) {
+                                                matchCount++;
+                                                datapointDetails.setValid(true);
+                                            }
+                                        } else if (null!=attribteValueInXml) {
+                                            matchCount++;
+                                            datapointDetails.setValid(true);
+                                        }
+                                    } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
+                                        boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(attribteValueInXml, node, datapointDetails, container, doc, uniqueIdBasedMap);
+                                        if(isValid){
+                                            matchCount++;
+                                            datapointDetails.setValid(true);
+                                        }
+                                    }
+                                } else if(datapointDetails.isDatapoint()) {
+									Element element = getChild((Element) node, datapoint);
+									String elementVal = null != element ? element.getTextContent() : null;
+									if ("R".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
+										if (null != datapointDetails.getEnumValues()) {
+											if (datapointDetails.getEnumValues().contains(elementVal)) {
+												matchCount++;
+												datapointDetails.setValid(true);
+											}
+										} else if (null != elementVal) {
+											matchCount++;
+											datapointDetails.setValid(true);
+										}
+									} else if ("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
+										if (null != element && null != elementVal && null != datapointDetails.getEnumValues()) {
+                                            if (datapointDetails.getEnumValues().contains(elementVal)) {
+                                                boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(elementVal, node, datapointDetails, container, doc, uniqueIdBasedMap);
+                                                if(isValid){
+                                                    matchCount++;
+                                                    datapointDetails.setValid(true);
+                                                }
+                                            }
+                                        } else {
+                                            boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(elementVal, node, datapointDetails, container, doc, uniqueIdBasedMap);
+                                            if(isValid){
+                                                matchCount++;
+                                                datapointDetails.setValid(true);
+                                            }
+                                        }
+									}
+                                } else if(datapointDetails.isDatapointAttribute()) {
+                                    String attrVal = getChildAttributeValue((Element) node, datapoint);
+                                    if("R".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
+                                        if (null != datapointDetails.getEnumValues()) {
+                                            if (datapointDetails.getEnumValues().contains(attrVal)) {
+                                                matchCount++;
+                                                datapointDetails.setValid(true);
+                                            }
+										} else if (null != attrVal) {
+                                            matchCount++;
+                                            datapointDetails.setValid(true);
+                                        }
+                                    } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
+                                    	if (null != attrVal && null != datapointDetails.getEnumValues()) {
+                                            if (datapointDetails.getEnumValues().contains(attrVal)) {
+                                                boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(attrVal, node, datapointDetails, container, doc, uniqueIdBasedMap);
+                                                if(isValid){
+                                                    matchCount++;
+                                                    datapointDetails.setValid(true);
+                                                }
+                                            }
+                                        } else {
+                                            boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(attrVal, node, datapointDetails, container, doc, uniqueIdBasedMap);
+                                            if(isValid){
+                                                matchCount++;
+                                                datapointDetails.setValid(true);
+                                            }
+                                        }
+                                    }
+                                }
+                                dataPointsWithDetails.add(datapointDetails);
+                            }
+							if (datapoints.size() == matchCount) {
+								nodeMatchedWithContainer = true;
+            					break;
+            				} else {
+            					nodeWiseMatchedDatapoints.setDatapointMatchCount(matchCount);
+                                nodeWiseMatchedDatapoints.setDataPoints(dataPointsWithDetails);
+                                noOfDatapointsMatchedPerNode.add(nodeWiseMatchedDatapoints);
+            				}
+            			} else {
+            				nodeMatchedWithContainer = true;
+            				break;
+            			}
+            		}
+            		if(!nodeMatchedWithContainer) {
+            			noOfDatapointsMatchedPerNode.sort(Comparator.comparingInt(NodeWiseMatchedDatapoints::getDatapointMatchCount).reversed());
+            			for (DataPointDetails dataPoint : noOfDatapointsMatchedPerNode.get(0).getDataPoints()) {
+							if (!dataPoint.isValid()) {
+                            	setErrorMessage(validationErrors, key, dataPoint, dataPoint.getLineNumber(), fromWebUI);
+                            }
+                        }
+            		}
+            	}
+            	if(nodes.getLength() < minOccur || nodes.getLength() > maxOccur) {
+            		// TODO :: Need to show the error messages if container cardinality fails
+            	}
+            } else {
+            	for (GroupByContainer container : containerDetails) {
+        			if(container.getMinOccurs() > 0 && null != container.getDatapoints() && container.getDatapoints().size() > 0) {
+        				for (String dataPoint : container.getDatapoints().keySet()) {
+        					DataPointDetails dataPointDetails = container.getDatapoints().get(dataPoint);
+                            if(!dataPointDetails.isValid()){
+                            	setErrorMessage(validationErrors, key, dataPointDetails, dataPointDetails.getLineNumber(), fromWebUI);
+                            }
+                        }
+        			} else {
+        				// TODO :: Here need to build error message to show the container level messages..
+        			}
+            	}
+            }
+        }
+        log.debug(LocalDateTime.now());
+        return validationErrors;
+    }
+    
+    /*public Set<UCDValidationError> validateUCDDocument(Document doc, Map<String, List<GroupByContainer>> elementsMap, Map<String, UCDDeliverySpec> uniqueIdBasedMap) {
+    	log.debug(LocalDateTime.now());
+        Set<UCDValidationError> validationErrors = new LinkedHashSet<>();
+        for (String key : elementsMap.keySet()) {
+        	System.out.println("::::: map key ::::::" + key);
             List<GroupByContainer> containerDetails = elementsMap.get(key);
             NodeList nodes = getNodeList(doc, key);
             //int nodesLength = nodes.getLength();
@@ -79,17 +234,25 @@ public class EvaluateXmlNodes {
             //boolean hasDatapoints = false;
             DataPointDetails datapointDetails = null;
             String lineNumber = null;
+            int minOccur = 0;
+            int maxOccur = 0;
             for (GroupByContainer container : containerDetails) {
+            	minOccur = minOccur + container.getMinOccurs();
+            	maxOccur = maxOccur + container.getMaxOccurs();
             	lineNumber = null;
-                Map<String, DataPointDetails> datapoints = container.getDatapoints();
+                Map<String, DataPointDetails> containerDatapoints = container.getDatapoints();
                 //Map<String, DataPointDetails> rDataPoints = new HashMap<>();
-                if(null!=datapoints) {
+                if(null!=containerDatapoints) {
                     //hasDatapoints = true;
                     int matchingCount = 0;
+                    List<NodeWiseMatchedDatapoints> noOfDatapointsMatchedPerNode = new ArrayList<>(nodes.getLength());
                     for (int i = 0; i < nodes.getLength(); i++) {
+                    	NodeWiseMatchedDatapoints nodeWiseMatchedDatapoints = new NodeWiseMatchedDatapoints();
+                    	Map<String, DataPointDetails> datapoints =  new LinkedHashMap<String, DataPointDetails>(containerDatapoints);
                         Node node = nodes.item(i);
                         lineNumber = node.getUserData("lineNumber").toString();
                         int matchCount = 0;
+                        List<DataPointDetails> dataPointsWithDetails = new ArrayList<>();
                         for(String datapoint : datapoints.keySet()) {
                             datapointDetails = datapoints.get(datapoint);
                             datapointDetails.setLineNumber(lineNumber);
@@ -103,7 +266,7 @@ public class EvaluateXmlNodes {
                                             if (datapointDetails.getEnumValues().contains(attribteValueInXml)) {
                                                 matchCount++;
                                                 datapointDetails.setValid(true);
-                                            }else{
+                                            } else{
                                             	//setErrorMessage(validationErrors, key, datapointDetails);
                                             }
                                         } else {
@@ -143,7 +306,7 @@ public class EvaluateXmlNodes {
                                             datapointDetails.setValid(true);
                                         }
                                     }else{
-                                    	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
+                                    	//setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
                                     }
                                 } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
                                     if (null != element) {
@@ -165,11 +328,11 @@ public class EvaluateXmlNodes {
                                         }
                                     } else {
                                     	boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(null, node, datapointDetails, container, doc, uniqueIdBasedMap);
-                                        if(!isValid){
+                                        if(isValid){
                                             matchCount++;
                                             datapointDetails.setValid(true);
                                         }else{
-                                        	setErrorMessage(validationErrors, key, datapointDetails, datapointDetails.getLineNumber());
+                                        	//setErrorMessage(validationErrors, key, datapointDetails, datapointDetails.getLineNumber());
                                         }
                                     }
                                 }
@@ -182,7 +345,7 @@ public class EvaluateXmlNodes {
                                                 matchCount++;
                                                 datapointDetails.setValid(true);
                                             }else{
-                                            	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
+                                            	//setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
                                             }
                                         } else {
                                         	//setErrorMessage(validationErrors, key, datapointDetails);
@@ -190,7 +353,7 @@ public class EvaluateXmlNodes {
                                             datapointDetails.setValid(true);
                                         }
                                     }else{
-                                    	setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
+                                    	//setErrorMessage(validationErrors, key, datapointDetails, lineNumber);
                                     }
                                 } else if("CR".equalsIgnoreCase(datapointDetails.getConditionalityType())) {
                                     if (null != attrVal) {
@@ -199,31 +362,40 @@ public class EvaluateXmlNodes {
                                             matchCount++;
                                             datapointDetails.setValid(true);
                                         }else{
-                                        	setErrorMessage(validationErrors, key, datapointDetails, datapointDetails.getLineNumber());
+                                        	//setErrorMessage(validationErrors, key, datapointDetails, datapointDetails.getLineNumber());
                                         }
                                     } else {
-                                        matchCount++;
-                                        datapointDetails.setValid(true);
+                                    	boolean isValid = ConditionalDatapointsEvaluation.validateConditionalRequiredContainerAttribute(attrVal, node, datapointDetails, container, doc, uniqueIdBasedMap);
+                                        if(isValid){
+                                            matchCount++;
+                                            datapointDetails.setValid(true);
+                                        }
                                     }
                                 }
                             }
+                            dataPointsWithDetails.add(datapointDetails);
                         }
+                        nodeWiseMatchedDatapoints.setDatapointMatchCount(matchCount);
+                        nodeWiseMatchedDatapoints.setDataPoints(dataPointsWithDetails);
+                        noOfDatapointsMatchedPerNode.add(nodeWiseMatchedDatapoints);
                         if(matchCount == datapoints.size()) {
+                        	//break;
                             matchingCount++;
                            // isAnyNodeMatched = true;
-                            datapointDetails.setValid(true);
-                            datapointDetails.setLineNumber(lineNumber);
+                            //datapointDetails.setValid(true);
+                            //datapointDetails.setLineNumber(lineNumber);
                         }
                     }
+                    noOfDatapointsMatchedPerNode.sort(Comparator.comparingInt(NodeWiseMatchedDatapoints::getDatapointMatchCount));
                     if (container.getMinOccurs() > matchingCount) {
-                        for (String attr : container.getDatapoints().keySet()) {
-                            DataPointDetails attributeDetails = container.getDatapoints().get(attr);
-                            if(!attributeDetails.isValid()){
-                            	setErrorMessage(validationErrors, key, attributeDetails, attributeDetails.getLineNumber());
-                            }   
+                    	List<DataPointDetails> mostMatchedDatapointDetails = noOfDatapointsMatchedPerNode.get(0).getDataPoints();
+                        for (DataPointDetails dataPoint : mostMatchedDatapointDetails) {
+                            if(!dataPoint.isValid()){
+                            	setErrorMessage(validationErrors, key, dataPoint, dataPoint.getLineNumber());
+                            }
                         }
                     }
-                } /*else if (container.getMinOccurs() > nodesLength) {
+                }else if (container.getMinOccurs() > nodesLength) {
                     UCDValidationError ucdValidationError = new UCDValidationError();
                     ucdValidationError.setParentContainer(container.getParentContainer());
                     ucdValidationError.setXpath(container.getXpath());
@@ -232,11 +404,11 @@ public class EvaluateXmlNodes {
                     else
                         ucdValidationError.setErrorMsg("The cardinality of "+container.getParentContainer() +" is not as per the UCD specification. Please verify.");
                     validationErrors.add(ucdValidationError);
-                }*/
+                }
             }
-           // if(nodesLength > 0 && !isAnyNodeMatched && hasDatapoints) {
+           if(nodesLength > 0 && !isAnyNodeMatched && hasDatapoints) {
             	//setErrorMessage(validationErrors, key, datapointDetails, lineNumber.toString());
-                /*UCDValidationError ucdValidationError = new UCDValidationError();
+                UCDValidationError ucdValidationError = new UCDValidationError();
                 String[] xpathParts = key.split("/");
                 String parentContainer = xpathParts[xpathParts.length-1];
                 ucdValidationError.setParentContainer(parentContainer);
@@ -245,12 +417,12 @@ public class EvaluateXmlNodes {
                 	ucdValidationError.setErrorMsg("The "+ parentContainer +" container is not as per the UCD specification. Please verify all the datapoints.");
                 else
                 	ucdValidationError.setErrorMsg("The "+ parentContainer +": " + datapointDetails.getDatapointErrorMessage());
-                validationErrors.add(ucdValidationError);*/
-            //}
+                validationErrors.add(ucdValidationError);
+            }
         }
         log.debug(LocalDateTime.now());
         return validationErrors;
-    }
+    }*/
     
     public List<Node> list(final NodeList list) {
         List<Node> nodes = new ArrayList<>();
@@ -260,7 +432,7 @@ public class EvaluateXmlNodes {
         return nodes;
     }
     
-    private void setErrorMessage(Set<UCDValidationError> validationErrors, String key, DataPointDetails datapointDetails, String lineNumber){
+    private void setErrorMessage(Set<UCDValidationError> validationErrors, String key, DataPointDetails datapointDetails, String lineNumber, boolean fromWebUI){
     	UCDValidationError ucdValidationError = new UCDValidationError();
         String[] xpathParts = key.split("/");
         String parentContainer = xpathParts[xpathParts.length-1];
@@ -271,9 +443,12 @@ public class EvaluateXmlNodes {
         	ucdValidationError.setErrorMsg("The "+ xpathParts +" container is not as per the UCD specification. Please verify all the datapoints.");
         else{
         	ucdValidationError.setDataPointName(datapointDetails.getDatapointName());
-        	ucdValidationError.setErrorMsg(datapointDetails.getDatapointErrorMessage());
-        	ucdValidationError.setUiHeader(datapointDetails.getUiHeader());
-        	ucdValidationError.setUiLabel(datapointDetails.getUiLabel());
+        	if(fromWebUI)
+        		ucdValidationError.setUIErrorMsg(datapointDetails.getDatapointUIErrorMessage());
+        	else
+        		ucdValidationError.setErrorMsg(datapointDetails.getDatapointXmlErrorMessage());
+        	//ucdValidationError.setUiHeader(datapointDetails.getUiHeader());
+        	//ucdValidationError.setUiLabel(datapointDetails.getUiLabel());
         }
         validationErrors.add(ucdValidationError);
     }

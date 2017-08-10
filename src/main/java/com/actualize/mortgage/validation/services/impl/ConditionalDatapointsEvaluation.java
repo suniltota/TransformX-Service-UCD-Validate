@@ -3,6 +3,7 @@ package com.actualize.mortgage.validation.services.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -13,6 +14,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -122,90 +124,157 @@ public class ConditionalDatapointsEvaluation {
         String[] conditionsTokens = targetCondition.split("\\$\\$");
         for(int e=0; e<conditionsTokens.length; e++)
             conditionsTokens[e] = conditionsTokens[e].trim();
-        UCDDeliverySpec targetDatapointSpec = uniqueIdMap.get(conditionsTokens[0]);
-        DataPointDetails targetDatapointDetails =  prepareDatapointBySpec(targetDatapointSpec);
-        if(travelContainer.equals("THIS")) {
-            if(container.getDatapoints().containsKey(targetDatapointSpec.getMismodatapointname())) {
-                targetDatapointDetails = container.getDatapoints().get(targetDatapointSpec.getMismodatapointname());
-                Element element = getElementFromNode((Element) node, targetDatapointDetails.getDatapointName());
-                return validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
-            } else {
-                return false;
-            }
-        } else if(travelContainer.equals("NONE")) {
-            NodeList targetNodes = getNodeList(doc, targetDatapointSpec.getMismoxpath());
-            for (int j = 0; j < targetNodes.getLength(); j++) {
-                Node targetNode = targetNodes.item(j);
-                Element element = getElementFromNode((Element) targetNode, targetDatapointDetails.getDatapointName());
-                boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
-                if(conditionSatisfied)
-                    return true;
-            }
-            return false;
+        if(travelContainer.equals("XPATH")) {
+        	String lhsResult = "";
+        	String rhsResult = "";
+        	String conditionType = conditionsTokens[1];
+        	EvaluateXmlNodes evaluateXmlNodes = new EvaluateXmlNodes();
+        	if(conditionsTokens[0].contains("-")) {
+        		String[] xpathConditions = conditionsTokens[0].split("-");
+        		for(int t=0; t<xpathConditions.length; t++)
+        			xpathConditions[t] = xpathConditions[t].trim();
+        		String lhsPartOne = xpathConditions[0];
+        		String lhsPartTwo = xpathConditions[1];
+                if(lhsPartOne.substring(0,lhsPartOne.indexOf("(")).equals("ENUM")) {
+                	String xmlPath = "";
+                	String lhsPartOneUniqueId = lhsPartOne.substring(lhsPartOne.indexOf("(")+1,lhsPartOne.indexOf(")"));
+                	UCDDeliverySpec lhsPartOneTargetDatapointSpec = uniqueIdMap.get(lhsPartOneUniqueId);                    
+                    xmlPath = lhsPartOneTargetDatapointSpec.getMismoxpath() +"["+lhsPartOneTargetDatapointSpec.getMismodatapointname()+"='"+lhsPartOneTargetDatapointSpec.getUcdsupportedenumerations()+"']/";
+                    if(lhsPartTwo.substring(0, lhsPartTwo.indexOf("(")).equals("SIBVAL")) {
+                    	String lhsPartTwoUniqueId = lhsPartTwo.substring(lhsPartTwo.indexOf("(")+1,lhsPartTwo.indexOf(")"));
+                    	UCDDeliverySpec lhsPartTwoTargetDatapointSpec = uniqueIdMap.get(lhsPartTwoUniqueId);
+                    	xmlPath = xmlPath + lhsPartTwoTargetDatapointSpec.getMismodatapointname();
+                    }                    
+                	lhsResult = evaluateXmlNodes.getValue(doc, xmlPath);
+                }
+        	}
+        	if(conditionsTokens[2].contains("-")) {
+        		String[] xpathConditions = conditionsTokens[2].split("-");
+        		for(int t=0; t<xpathConditions.length; t++)
+        			xpathConditions[t] = xpathConditions[t].trim();
+        		String rhsPartOne = xpathConditions[0];
+        		String rhsPartTwo = xpathConditions[1];
+                if(rhsPartOne.substring(0,rhsPartOne.indexOf("(")).equals("ENUM")) {
+                	String xmlPath = "";
+                	String rhsPartOneUniqueId = rhsPartOne.substring(rhsPartOne.indexOf("(")+1,rhsPartOne.indexOf(")"));
+                	UCDDeliverySpec rhsPartOneTargetDatapointSpec = uniqueIdMap.get(rhsPartOneUniqueId);                    
+                    xmlPath = rhsPartOneTargetDatapointSpec.getMismoxpath() +"["+rhsPartOneTargetDatapointSpec.getMismodatapointname()+"='"+rhsPartOneTargetDatapointSpec.getUcdsupportedenumerations()+"']/";
+                    if(rhsPartTwo.substring(0, rhsPartTwo.indexOf("(")).equals("SIBVAL")) {
+                    	String rhsPartTwoUniqueId = rhsPartTwo.substring(rhsPartTwo.indexOf("(")+1,rhsPartTwo.indexOf(")"));
+                    	UCDDeliverySpec rhsPartTwoTargetDatapointSpec = uniqueIdMap.get(rhsPartTwoUniqueId);
+                    	xmlPath = xmlPath + rhsPartTwoTargetDatapointSpec.getMismodatapointname();
+                    }                    
+                	rhsResult = evaluateXmlNodes.getValue(doc, xmlPath);
+                }
+        	}
+        	switch(conditionType) {
+        	  case ">" :
+        	  	{
+                  Double lhsResultVal = Double.parseDouble(lhsResult);
+                  Double rhsResultVal = Double.parseDouble(rhsResult);
+                  if(lhsResultVal > rhsResultVal) {
+                      return true;
+                  }
+                }
+                break;
+        	  case "<" :
+        	  	{
+                  Double lhsResultVal = Double.parseDouble(lhsResult);
+                  Double rhsResultVal = Double.parseDouble(rhsResult);
+                  if(lhsResultVal < rhsResultVal) {
+                      return true;
+                  }
+                }
+                break;
+        	}
+        	if(null==currentDatapointValue) {
+        		return true;
+        	}
+        	return false;
         } else {
-            Element element = null;
-            if(container.getXpath().contains(travelContainer)){
-                Node parentNode = getParentNode(node, travelContainer);
-                String[] targetXpathSplit = targetDatapointSpec.getMismoxpath().split("/");
-                String xpathAfterTravelContainer = "";
-                for(int counter=targetXpathSplit.length - 1; counter >= 0;counter--){
-                    if( targetXpathSplit[counter].equals(travelContainer))
-                        break;
-                    xpathAfterTravelContainer = targetXpathSplit[counter] +"/" + xpathAfterTravelContainer;
-                }
-                if(xpathAfterTravelContainer.endsWith("OTHER/")) {
-                    xpathAfterTravelContainer = xpathAfterTravelContainer.substring(0, xpathAfterTravelContainer.length()-1);
-                    NodeList nodeList = getNodeList(parentNode, xpathAfterTravelContainer);
-                    for (int j = 0; j < nodeList.getLength(); j++) {
-                        Node otherNode = nodeList.item(j);
-                        element = getElementFromNode((Element) otherNode, targetDatapointSpec.getMismodatapointname());
-                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
-                        if(conditionSatisfied)
-                            return true;
-                    }
-                } else {
-                    xpathAfterTravelContainer = xpathAfterTravelContainer + targetDatapointSpec.getMismodatapointname();
-                    NodeList nodeList = getNodeList(parentNode, xpathAfterTravelContainer);
-                    if(nodeList.getLength()==0) {
-                        element = null;
-                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
-                        if(conditionSatisfied)
-                            return true;
-                    } else {
-                        for (int j = 0; j < nodeList.getLength(); j++) {
-                            element = (Element) nodeList.item(j);
-                            boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
-                            if(conditionSatisfied)
-                                return true;
-                        } 
-                    }
-                }
-                return false;
-            } else {
-                String[] targetXpathSplit = targetDatapointSpec.getMismoxpath().split("/");
-                String xpathAfterTravelContainer = "";
-                for(int counter=targetXpathSplit.length - 1; counter >= 0;counter--){
-                    if( targetXpathSplit[counter].equals(travelContainer))
-                        break;
-                    xpathAfterTravelContainer = targetXpathSplit[counter] +"/" + xpathAfterTravelContainer;
-                }
-                xpathAfterTravelContainer = xpathAfterTravelContainer + targetDatapointSpec.getMismodatapointname();
-                NodeList nodeList = getNodeList(node, xpathAfterTravelContainer);
-                if(nodeList.getLength()==0) {
-                    element = null;
-                    boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
-                    if(conditionSatisfied)
-                        return true;
-                } else {
-                    for (int j = 0; j < nodeList.getLength(); j++) {
-                        element = (Element) nodeList.item(j);
-                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
-                        if(conditionSatisfied)
-                            return true;
-                    }
-                }
-                return false;
-            }
+            UCDDeliverySpec targetDatapointSpec = uniqueIdMap.get(conditionsTokens[0]);
+            DataPointDetails targetDatapointDetails =  prepareDatapointBySpec(targetDatapointSpec);
+	        if(travelContainer.equals("THIS")) {
+	        	if(container.getDatapoints().containsKey(targetDatapointSpec.getMismodatapointname())) {
+	                targetDatapointDetails = container.getDatapoints().get(targetDatapointSpec.getMismodatapointname());
+	            }
+	            Element element = getElementFromNode((Element) node, targetDatapointDetails.getDatapointName());
+	            return validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	        } else if(travelContainer.equals("NONE")) {
+	            NodeList targetNodes = getNodeList(doc, targetDatapointSpec.getMismoxpath());
+	            for (int j = 0; j < targetNodes.getLength(); j++) {
+	                Node targetNode = targetNodes.item(j);
+	                Element element = getElementFromNode((Element) targetNode, targetDatapointDetails.getDatapointName());
+	                boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                if(conditionSatisfied)
+	                    return true;
+	            }
+	            return false;
+	        } else {
+	            Element element = null;
+	            if(container.getXpath().contains(travelContainer)){
+	                Node parentNode = getParentNode(node, travelContainer);
+	                String[] targetXpathSplit = targetDatapointSpec.getMismoxpath().split("/");
+	                String xpathAfterTravelContainer = "";
+	                for(int counter=targetXpathSplit.length - 1; counter >= 0;counter--){
+	                    if( targetXpathSplit[counter].equals(travelContainer))
+	                        break;
+	                    xpathAfterTravelContainer = targetXpathSplit[counter] +"/" + xpathAfterTravelContainer;
+	                }
+	                if(xpathAfterTravelContainer.endsWith("OTHER/")) {
+	                    xpathAfterTravelContainer = xpathAfterTravelContainer.substring(0, xpathAfterTravelContainer.length()-1);
+	                    NodeList nodeList = getNodeList(parentNode, xpathAfterTravelContainer);
+	                    for (int j = 0; j < nodeList.getLength(); j++) {
+	                        Node otherNode = nodeList.item(j);
+	                        element = getElementFromNode((Element) otherNode, targetDatapointSpec.getMismodatapointname());
+	                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                        if(conditionSatisfied)
+	                            return true;
+	                    }
+	                } else {
+	                    xpathAfterTravelContainer = xpathAfterTravelContainer + targetDatapointSpec.getMismodatapointname();
+	                    NodeList nodeList = getNodeList(parentNode, xpathAfterTravelContainer);
+	                    if(nodeList.getLength()==0) {
+	                        element = null;
+	                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                        if(conditionSatisfied)
+	                            return true;
+	                    } else {
+	                        for (int j = 0; j < nodeList.getLength(); j++) {
+	                            element = (Element) nodeList.item(j);
+	                            boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                            if(conditionSatisfied)
+	                                return true;
+	                        } 
+	                    }
+	                }
+	                return false;
+	            } else {
+	                String[] targetXpathSplit = targetDatapointSpec.getMismoxpath().split("/");
+	                String xpathAfterTravelContainer = "";
+	                for(int counter=targetXpathSplit.length - 1; counter >= 0;counter--){
+	                    if( targetXpathSplit[counter].equals(travelContainer))
+	                        break;
+	                    xpathAfterTravelContainer = targetXpathSplit[counter] +"/" + xpathAfterTravelContainer;
+	                }
+	                xpathAfterTravelContainer = xpathAfterTravelContainer + targetDatapointSpec.getMismodatapointname();
+	                NodeList nodeList = getNodeList(node, xpathAfterTravelContainer);
+	                if(nodeList.getLength()==0) {
+	                    element = null;
+	                    boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                    if(conditionSatisfied)
+	                        return true;
+	                } else {
+	                    for (int j = 0; j < nodeList.getLength(); j++) {
+	                        element = (Element) nodeList.item(j);
+	                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                        if(conditionSatisfied)
+	                            return true;
+	                    }
+	                }
+	                return false;
+	            }
+	        }
         }
     }
 
@@ -224,6 +293,31 @@ public class ConditionalDatapointsEvaluation {
         return null;
     }
     
+    public static String getChildAttributeValue(Element parent, String name) {
+        for (Node child = parent.getFirstChild(); child != null; child = child.getNextSibling()) {
+            if (child instanceof Element) {
+                if(child.hasAttributes()) {
+                    NamedNodeMap attributes = child.getAttributes();
+                    Map<String, String> attributesMap = getAttributesMap(attributes);
+                    if(attributesMap.containsKey(name)) {
+                        return attributesMap.get(name);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    public static Map<String, String> getAttributesMap(NamedNodeMap nodeAttributes) {
+        Map<String, String> attributesMap = new LinkedHashMap<>();
+        if (null != nodeAttributes) {
+            for (int j = 0; j < nodeAttributes.getLength(); j++) {
+                Node attr = nodeAttributes.item(j);
+                attributesMap.put(attr.getNodeName(), attr.getNodeValue());
+            }
+        }
+        return attributesMap;
+    }
     public static Node getParentNode(Node node, String parentName) {
         if(node.getNodeName().equals("mismo:"+parentName) || node.getNodeName().equals("gse:"+parentName))
             return node;
@@ -274,25 +368,51 @@ public class ConditionalDatapointsEvaluation {
         switch(conditionsTokens[1]) {
             case "==" :
                 if(conditionsTokens[2].equals("NULL")) {
-                    return conditionSatisfied = null == xmlTargetElement ? true : false;
+                	if(null == xmlTargetElement && null!=valueOfcurrentNodeinXml) {
+                		return true;
+                	} else if(null!=xmlTargetElement && null == valueOfcurrentNodeinXml) {
+                		return true;
+                	}
                 } else {
                     String targetElementVal = null != xmlTargetElement ? xmlTargetElement.getTextContent() : null;
-                    if(conditionsTokens[2].equals(targetElementVal)) {
+                    if(conditionsTokens[2].equals(targetElementVal) && null!=valueOfcurrentNodeinXml) {
                         return conditionSatisfied = true;
+                    } else if(!conditionsTokens[2].equals(targetElementVal) && null==valueOfcurrentNodeinXml) {
+                    	return true;
                     }
                 }
                 break;
             case "!=":
                 if(conditionsTokens[2].equals("NULL")) {
-                    return conditionSatisfied = null != xmlTargetElement ? true : false;
+                	if(null!=xmlTargetElement && null!=valueOfcurrentNodeinXml) {
+                		return true;
+                	} else if((null==xmlTargetElement && null==valueOfcurrentNodeinXml)) {
+                		return true;
+                	} else {
+                		return false;
+                	}
                 } else if(conditionsTokens[2].equals("ENUM")) {
-                    if(!targetDatapointDetails.getEnumValues().contains(valueOfcurrentNodeinXml)) {
+                    if(null!=valueOfcurrentNodeinXml && !targetDatapointDetails.getEnumValues().contains(valueOfcurrentNodeinXml) ) {
                         return conditionSatisfied = true;
                     }
                 } else {
                     String targetElementVal = null != xmlTargetElement ? xmlTargetElement.getTextContent() : null;
-                    if(!conditionsTokens[2].equals(targetElementVal)) {
+                    if(!conditionsTokens[2].equals(targetElementVal) && null!=valueOfcurrentNodeinXml) {
                         return conditionSatisfied = true;
+                    } else if(conditionsTokens[2].equals(targetElementVal) && null==valueOfcurrentNodeinXml) {
+                        return conditionSatisfied = true;
+                    } else {
+                    	return false;
+                    }
+                }
+                break;
+            case "!Contains":
+                {
+                    String targetElementVal = null != xmlTargetElement ? xmlTargetElement.getTextContent() : null;
+                    if(null!=targetElementVal && !targetElementVal.contains(conditionsTokens[2])) {
+                    	return true;
+                    } else if(null!=targetElementVal && targetElementVal.contains(conditionsTokens[2]) && null==valueOfcurrentNodeinXml) {
+                    	return true;
                     }
                 }
                 break;
@@ -360,7 +480,8 @@ public class ConditionalDatapointsEvaluation {
             ucdDataPointDetails.setDatapointName(ucdDeliverySpec.getMismodatapointname());
         }
         ucdDataPointDetails.setDatapointCondition(ucdDeliverySpec.getConditionality());
-        ucdDataPointDetails.setDatapointErrorMessage(ucdDeliverySpec.getErrorMessage());
+        ucdDataPointDetails.setDatapointXmlErrorMessage(ucdDeliverySpec.getXmlErrorMessage());
+        ucdDataPointDetails.setDatapointUIErrorMessage(ucdDeliverySpec.getUiErrorMessage());
         ucdDataPointDetails.setValidationRequired(ucdDeliverySpec.getValidationRequired());
         ucdDataPointDetails.setConditionalityType(ucdDeliverySpec.getConditionalityType());
         if (ucdDeliverySpec.getUcdFormat().equalsIgnoreCase("Enumerated") || !ucdDeliverySpec.getUcdsupportedenumerations().isEmpty()) {

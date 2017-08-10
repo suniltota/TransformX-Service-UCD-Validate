@@ -9,7 +9,8 @@ public class DataPointDetails {
     private boolean datapointAttribute;
     private boolean datapoint;
     private String datapointCondition;
-    private String datapointErrorMessage;
+    private String datapointXmlErrorMessage;
+    private String datapointUIErrorMessage;
     private String validationRequired;
     private Set<String> enumValues;
     private String conditionalityType;
@@ -93,18 +94,33 @@ public class DataPointDetails {
     }
 
     /**
-     * @return the datapointErrorMessage
+     * @return the datapointXmlErrorMessage
      */
-    public String getDatapointErrorMessage() {
-        return datapointErrorMessage;
+    public String getDatapointXmlErrorMessage() {
+        return datapointXmlErrorMessage;
     }
 
     /**
-     * @param datapointErrorMessage
-     *            the datapointErrorMessage to set
+     * @param datapointXmlErrorMessage
+     *            the datapointXmlErrorMessage to set
      */
-    public void setDatapointErrorMessage(String datapointErrorMessage) {
-        this.datapointErrorMessage = datapointErrorMessage;
+    public void setDatapointXmlErrorMessage(String datapointXmlErrorMessage) {
+        this.datapointXmlErrorMessage = datapointXmlErrorMessage;
+    }
+    
+    /**
+     * @return the datapointUIErrorMessage
+     */
+    public String getDatapointUIErrorMessage() {
+        return datapointUIErrorMessage;
+    }
+
+    /**
+     * @param datapointUIErrorMessage
+     *            the datapointUIErrorMessage to set
+     */
+    public void setDatapointUIErrorMessage(String datapointUIErrorMessage) {
+        this.datapointUIErrorMessage = datapointUIErrorMessage;
     }
 
     /**
@@ -166,7 +182,8 @@ public class DataPointDetails {
         result = prime * result + (datapoint ? 1231 : 1237);
         result = prime * result + (datapointAttribute ? 1231 : 1237);
         result = prime * result + ((datapointCondition == null) ? 0 : datapointCondition.hashCode());
-        result = prime * result + ((datapointErrorMessage == null) ? 0 : datapointErrorMessage.hashCode());
+        result = prime * result + ((datapointXmlErrorMessage == null) ? 0 : datapointXmlErrorMessage.hashCode());
+        result = prime * result + ((datapointUIErrorMessage == null) ? 0 : datapointUIErrorMessage.hashCode());
         result = prime * result + ((datapointName == null) ? 0 : datapointName.hashCode());
         result = prime * result + ((enumValues == null) ? 0 : enumValues.hashCode());
         result = prime * result + ((validationRequired == null) ? 0 : validationRequired.hashCode());
@@ -203,10 +220,15 @@ public class DataPointDetails {
                 return false;
         } else if (!datapointCondition.equals(other.datapointCondition))
             return false;
-        if (datapointErrorMessage == null) {
-            if (other.datapointErrorMessage != null)
+        if (datapointXmlErrorMessage == null) {
+            if (other.datapointXmlErrorMessage != null)
                 return false;
-        } else if (!datapointErrorMessage.equals(other.datapointErrorMessage))
+        } else if (!datapointXmlErrorMessage.equals(other.datapointXmlErrorMessage))
+            return false;
+        if (datapointUIErrorMessage == null) {
+            if (other.datapointUIErrorMessage != null)
+                return false;
+        } else if (!datapointUIErrorMessage.equals(other.datapointUIErrorMessage))
             return false;
         if (datapointName == null) {
             if (other.datapointName != null)

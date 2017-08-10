@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -41,12 +42,13 @@ public class UCDValidationController {
      * @return UCDValidationErrors for closing disclosure
      * @throws Exception
      */
-	@RequestMapping(value = "/cd/validate", method = { RequestMethod.POST }, produces = "application/xml")
-	public UCDValidationErrors validateUCDXML(@RequestBody String xmldoc) throws Exception {
+	@RequestMapping(value = "/cd/{version}/validate", method = { RequestMethod.POST }, produces = "application/xml")
+	public UCDValidationErrors validateUCDXML(@PathVariable String version, @RequestBody String xmldoc) throws Exception {
 		LOG.info("user "+SecurityContextHolder.getContext().getAuthentication().getName()+" used Service: Validate UCD XML");
 		Document document = PositionalXMLReader.readXML(new ByteArrayInputStream(xmldoc.getBytes("utf-8")));
 				//.parse(new InputSource(new ByteArrayInputStream(xmldoc.getBytes("utf-8"))));
 		UCDValidator ucdValidator = new UCDValidator();
-		return ucdValidator.validateUCDXML(document);
+		boolean fromWebUI = "WebUI".equalsIgnoreCase(version) ? true : false;
+		return ucdValidator.validateUCDXML(document, fromWebUI);
 	}
 }

@@ -24,7 +24,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import com.actualize.mortgage.validation.UCDValidationSpringBootApplication;
 import com.actualize.mortgage.validation.domainmodels.DataPointDetails;
 import com.actualize.mortgage.validation.domainmodels.GroupByContainer;
 import com.actualize.mortgage.validation.domainmodels.UCDDeliverySpec;
@@ -67,8 +66,8 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
                 ucdDeliverySpec.setMismodatapointname(getValue(row.getCell(7)));
                 ucdDeliverySpec.setUcdsupportedenumerations(getValue(row.getCell(9)));
                 ucdDeliverySpec.setUcdFormat(getValue(row.getCell(10)));
-                ucdDeliverySpec.setUiLabel(getValue(row.getCell(23)));
-                ucdDeliverySpec.setUiHeader(getValue(row.getCell(24)));
+                //ucdDeliverySpec.setUiLabel(getValue(row.getCell(23)));
+                //ucdDeliverySpec.setUiHeader(getValue(row.getCell(24)));
                 //19 Purchase, 20 Error Message
                 //21 Non Seller 22 Error Message
                 if(isPurchase && !getValue(row.getCell(11)).equals("N/A")){
@@ -77,15 +76,17 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
                     ucdDeliverySpec.setCardinality(getValue(row.getCell(13)));
                     ucdDeliverySpec.setDeliveryNotes(getValue(row.getCell(14)));
                 	ucdDeliverySpec.setConditionality(getValue(row.getCell(19)));
-                	ucdDeliverySpec.setErrorMessage(getValue(row.getCell(20)));
+                	ucdDeliverySpec.setXmlErrorMessage(getValue(row.getCell(20)));
+                	ucdDeliverySpec.setUiErrorMessage(getValue(row.getCell(21)));
                 	results.add(ucdDeliverySpec);
                 }else if(!isPurchase && !getValue(row.getCell(15)).equals("N/A")){
                 	ucdDeliverySpec.setConditionalityType(getValue(row.getCell(15)));
                     ucdDeliverySpec.setConditionalityDetails(getValue(row.getCell(16)));
                     ucdDeliverySpec.setCardinality(getValue(row.getCell(17)));
                     ucdDeliverySpec.setDeliveryNotes(getValue(row.getCell(18)));
-                	ucdDeliverySpec.setConditionality(getValue(row.getCell(21)));
-                	ucdDeliverySpec.setErrorMessage(getValue(row.getCell(22)));
+                	ucdDeliverySpec.setConditionality(getValue(row.getCell(22)));
+                	ucdDeliverySpec.setXmlErrorMessage(getValue(row.getCell(23)));
+                	ucdDeliverySpec.setUiErrorMessage(getValue(row.getCell(24)));
                 	results.add(ucdDeliverySpec);
                 }
             }
@@ -191,7 +192,7 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
                     groupingByContainerMap.put(ucdDeliverySpec.getMismoxpath(), groupByContainers);
             }
         }
-        for (Map.Entry<String, List<GroupByContainer>> entry : groupingByContainerMap.entrySet())
+        /*for (Map.Entry<String, List<GroupByContainer>> entry : groupingByContainerMap.entrySet())
         {
             List<GroupByContainer> containersGrp = entry.getValue();
             if (containersGrp.size() > 1) {
@@ -212,7 +213,7 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
                 containersGrp = alterNateGroupByContainers;
             }
             groupingByContainerMap.put(entry.getKey(), containersGrp);
-        }
+        }*/
         log.debug("End Group containers .. "+LocalDateTime.now());
         return groupingByContainerMap;
     }
@@ -233,11 +234,12 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
             ucdDataPointDetails = new DataPointDetails();
         ucdDataPointDetails.setDatapointName(ucdDeliverySpec.getMismodatapointname());
         ucdDataPointDetails.setDatapointCondition(ucdDeliverySpec.getConditionality());
-        ucdDataPointDetails.setDatapointErrorMessage(ucdDeliverySpec.getErrorMessage());
+        ucdDataPointDetails.setDatapointXmlErrorMessage(ucdDeliverySpec.getXmlErrorMessage());
+        ucdDataPointDetails.setDatapointUIErrorMessage(ucdDeliverySpec.getUiErrorMessage());
         ucdDataPointDetails.setValidationRequired(ucdDeliverySpec.getValidationRequired());
         ucdDataPointDetails.setConditionalityType(ucdDeliverySpec.getConditionalityType());
-        ucdDataPointDetails.setUiHeader(ucdDeliverySpec.getUiHeader());
-        ucdDataPointDetails.setUiLabel(ucdDeliverySpec.getUiLabel());
+        //ucdDataPointDetails.setUiHeader(ucdDeliverySpec.getUiHeader());
+        //ucdDataPointDetails.setUiLabel(ucdDeliverySpec.getUiLabel());
         if (ucdDeliverySpec.getUcdFormat().equalsIgnoreCase("Enumerated") || !ucdDeliverySpec.getUcdsupportedenumerations().isEmpty()) {
             Set<String> enumValues = ucdDataPointDetails.getEnumValues();
             if (null == enumValues)
@@ -265,9 +267,9 @@ public class UCDSpecReaderImpl implements UCDSpecReader {
             datapoints.put(ucdDeliverySpec.getMismodatapointname(), ucdDataPointDetails);
             groupByContainer.setDatapoints(datapoints);
         } else {
-            groupByContainer.setContainerErrorMsg(ucdDeliverySpec.getErrorMessage());
+            //groupByContainer.setContainerErrorMsg(ucdDeliverySpec.getErrorMessage());
             String cardinality = ucdDeliverySpec.getCardinality();
-            if (null != cardinality && !"".equalsIgnoreCase(cardinality) ) {
+            if (null != cardinality && !"".equalsIgnoreCase(cardinality)) {
                 if(cardinality.indexOf(":") != -1) {
                     String[] cardinalityRange = cardinality.split(":");
                     int min = Integer.parseInt(cardinalityRange[0]);
