@@ -73,7 +73,7 @@ public class EvaluateXmlNodes {
     	log.debug(LocalDateTime.now());
         Set<UCDValidationError> validationErrors = new LinkedHashSet<>();
         for (String key : elementsMap.keySet()) {
-        	System.out.println("::::: map key ::::::" + key);
+        	//System.out.println("::::: map key ::::::" + key);
             List<GroupByContainer> containerDetails = elementsMap.get(key);
             NodeList nodes = getNodeList(doc, key);
         	int minOccur = 0;
