@@ -79,7 +79,7 @@ public class ConditionalDatapointsEvaluation {
                             else
                                 resultsOflines.add("OR");
                         } else {
-                            boolean isSatisfied = validateConditionalLine(conditionLines[i], currentDatapointValue, node, dataPointDetails, container, doc, uniqueIdMap);
+                            boolean isSatisfied = validateConditionInGroupLine(conditionLines[i], currentDatapointValue, node, dataPointDetails, container, doc, uniqueIdMap);
                             if(isGroupCondition) {
                                 if(!groupConditionsResults.isEmpty()) {
                                     boolean groupConditionsResult = false;
@@ -111,6 +111,10 @@ public class ConditionalDatapointsEvaluation {
                     }
                 }
                 isValid = Boolean.valueOf(resultsOflines.get(0));
+                if(null==currentDatapointValue && !isValid)
+                	return true;
+                else if(null!=currentDatapointValue && isValid)
+                	return true; 
             }
         } else 
             return true;
@@ -224,13 +228,19 @@ public class ConditionalDatapointsEvaluation {
 	                if(xpathAfterTravelContainer.endsWith("OTHER/")) {
 	                    xpathAfterTravelContainer = xpathAfterTravelContainer.substring(0, xpathAfterTravelContainer.length()-1);
 	                    NodeList nodeList = getNodeList(parentNode, xpathAfterTravelContainer);
-	                    for (int j = 0; j < nodeList.getLength(); j++) {
-	                        Node otherNode = nodeList.item(j);
-	                        element = getElementFromNode((Element) otherNode, targetDatapointSpec.getMismodatapointname());
-	                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                    if(nodeList.getLength()>0) {
+	                    	for (int j = 0; j < nodeList.getLength(); j++) {
+	                    		Node otherNode = nodeList.item(j);
+		                        element = getElementFromNode((Element) otherNode, targetDatapointSpec.getMismodatapointname());
+		                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+		                        if(conditionSatisfied)
+		                            return true;
+		                    }
+	                	} else {
+	                		boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, null, targetDatapointDetails, currentDatapointValue);
 	                        if(conditionSatisfied)
 	                            return true;
-	                    }
+	                	}
 	                } else {
 	                    xpathAfterTravelContainer = xpathAfterTravelContainer + targetDatapointSpec.getMismodatapointname();
 	                    NodeList nodeList = getNodeList(parentNode, xpathAfterTravelContainer);
@@ -268,6 +278,173 @@ public class ConditionalDatapointsEvaluation {
 	                    for (int j = 0; j < nodeList.getLength(); j++) {
 	                        element = (Element) nodeList.item(j);
 	                        boolean conditionSatisfied =  validateValueOfCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                        if(conditionSatisfied)
+	                            return true;
+	                    }
+	                }
+	                return false;
+	            }
+	        }
+        }
+    }
+    
+    public static boolean validateConditionInGroupLine(String conditionLine, String currentDatapointValue, Node node, DataPointDetails dataPointDetails, GroupByContainer container, Document doc, Map<String, UCDDeliverySpec> uniqueIdMap) {
+        String[] conditionSplitForContainer = conditionLine.split(":");
+        String travelContainer = conditionSplitForContainer[0];
+        String targetCondition = conditionSplitForContainer[1];
+        String[] conditionsTokens = targetCondition.split("\\$\\$");
+        for(int e=0; e<conditionsTokens.length; e++)
+            conditionsTokens[e] = conditionsTokens[e].trim();
+        if(travelContainer.equals("XPATH")) {
+        	String lhsResult = "";
+        	String rhsResult = "";
+        	String conditionType = conditionsTokens[1];
+        	EvaluateXmlNodes evaluateXmlNodes = new EvaluateXmlNodes();
+        	if(conditionsTokens[0].contains("-")) {
+        		String[] xpathConditions = conditionsTokens[0].split("-");
+        		for(int t=0; t<xpathConditions.length; t++)
+        			xpathConditions[t] = xpathConditions[t].trim();
+        		String lhsPartOne = xpathConditions[0];
+        		String lhsPartTwo = xpathConditions[1];
+                if(lhsPartOne.substring(0,lhsPartOne.indexOf("(")).equals("ENUM")) {
+                	String xmlPath = "";
+                	String lhsPartOneUniqueId = lhsPartOne.substring(lhsPartOne.indexOf("(")+1,lhsPartOne.indexOf(")"));
+                	UCDDeliverySpec lhsPartOneTargetDatapointSpec = uniqueIdMap.get(lhsPartOneUniqueId);                    
+                    xmlPath = lhsPartOneTargetDatapointSpec.getMismoxpath() +"["+lhsPartOneTargetDatapointSpec.getMismodatapointname()+"='"+lhsPartOneTargetDatapointSpec.getUcdsupportedenumerations()+"']/";
+                    if(lhsPartTwo.substring(0, lhsPartTwo.indexOf("(")).equals("SIBVAL")) {
+                    	String lhsPartTwoUniqueId = lhsPartTwo.substring(lhsPartTwo.indexOf("(")+1,lhsPartTwo.indexOf(")"));
+                    	UCDDeliverySpec lhsPartTwoTargetDatapointSpec = uniqueIdMap.get(lhsPartTwoUniqueId);
+                    	xmlPath = xmlPath + lhsPartTwoTargetDatapointSpec.getMismodatapointname();
+                    }                    
+                	lhsResult = evaluateXmlNodes.getValue(doc, xmlPath);
+                }
+        	}
+        	if(conditionsTokens[2].contains("-")) {
+        		String[] xpathConditions = conditionsTokens[2].split("-");
+        		for(int t=0; t<xpathConditions.length; t++)
+        			xpathConditions[t] = xpathConditions[t].trim();
+        		String rhsPartOne = xpathConditions[0];
+        		String rhsPartTwo = xpathConditions[1];
+                if(rhsPartOne.substring(0,rhsPartOne.indexOf("(")).equals("ENUM")) {
+                	String xmlPath = "";
+                	String rhsPartOneUniqueId = rhsPartOne.substring(rhsPartOne.indexOf("(")+1,rhsPartOne.indexOf(")"));
+                	UCDDeliverySpec rhsPartOneTargetDatapointSpec = uniqueIdMap.get(rhsPartOneUniqueId);                    
+                    xmlPath = rhsPartOneTargetDatapointSpec.getMismoxpath() +"["+rhsPartOneTargetDatapointSpec.getMismodatapointname()+"='"+rhsPartOneTargetDatapointSpec.getUcdsupportedenumerations()+"']/";
+                    if(rhsPartTwo.substring(0, rhsPartTwo.indexOf("(")).equals("SIBVAL")) {
+                    	String rhsPartTwoUniqueId = rhsPartTwo.substring(rhsPartTwo.indexOf("(")+1,rhsPartTwo.indexOf(")"));
+                    	UCDDeliverySpec rhsPartTwoTargetDatapointSpec = uniqueIdMap.get(rhsPartTwoUniqueId);
+                    	xmlPath = xmlPath + rhsPartTwoTargetDatapointSpec.getMismodatapointname();
+                    }                    
+                	rhsResult = evaluateXmlNodes.getValue(doc, xmlPath);
+                }
+        	}
+        	switch(conditionType) {
+        	  case ">" :
+        	  	{
+                  Double lhsResultVal = Double.parseDouble(lhsResult);
+                  Double rhsResultVal = Double.parseDouble(rhsResult);
+                  if(lhsResultVal > rhsResultVal) {
+                      return true;
+                  }
+                }
+                break;
+        	  case "<" :
+        	  	{
+                  Double lhsResultVal = Double.parseDouble(lhsResult);
+                  Double rhsResultVal = Double.parseDouble(rhsResult);
+                  if(lhsResultVal < rhsResultVal) {
+                      return true;
+                  }
+                }
+                break;
+        	}
+        	if(null==currentDatapointValue) {
+        		return true;
+        	}
+        	return false;
+        } else {
+            UCDDeliverySpec targetDatapointSpec = uniqueIdMap.get(conditionsTokens[0]);
+            DataPointDetails targetDatapointDetails =  prepareDatapointBySpec(targetDatapointSpec);
+	        if(travelContainer.equals("THIS")) {
+	        	if(container.getDatapoints().containsKey(targetDatapointSpec.getMismodatapointname())) {
+	                targetDatapointDetails = container.getDatapoints().get(targetDatapointSpec.getMismodatapointname());
+	            }
+	            Element element = getElementFromNode((Element) node, targetDatapointDetails.getDatapointName());
+	            return validateValueInGroupCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	        } else if(travelContainer.equals("NONE")) {
+	            NodeList targetNodes = getNodeList(doc, targetDatapointSpec.getMismoxpath());
+	            for (int j = 0; j < targetNodes.getLength(); j++) {
+	                Node targetNode = targetNodes.item(j);
+	                Element element = getElementFromNode((Element) targetNode, targetDatapointDetails.getDatapointName());
+	                boolean conditionSatisfied =  validateValueInGroupCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                if(conditionSatisfied)
+	                    return true;
+	            }
+	            return false;
+	        } else {
+	            Element element = null;
+	            if(container.getXpath().contains(travelContainer)){
+	                Node parentNode = getParentNode(node, travelContainer);
+	                String[] targetXpathSplit = targetDatapointSpec.getMismoxpath().split("/");
+	                String xpathAfterTravelContainer = "";
+	                for(int counter=targetXpathSplit.length - 1; counter >= 0;counter--){
+	                    if( targetXpathSplit[counter].equals(travelContainer))
+	                        break;
+	                    xpathAfterTravelContainer = targetXpathSplit[counter] +"/" + xpathAfterTravelContainer;
+	                }
+	                if(xpathAfterTravelContainer.endsWith("OTHER/")) {
+	                    xpathAfterTravelContainer = xpathAfterTravelContainer.substring(0, xpathAfterTravelContainer.length()-1);
+	                    NodeList nodeList = getNodeList(parentNode, xpathAfterTravelContainer);
+	                    if(nodeList.getLength()>0) {
+	                    	for (int j = 0; j < nodeList.getLength(); j++) {
+	                    		Node otherNode = nodeList.item(j);
+		                        element = getElementFromNode((Element) otherNode, targetDatapointSpec.getMismodatapointname());
+		                        boolean conditionSatisfied =  validateValueInGroupCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+		                        if(conditionSatisfied)
+		                            return true;
+		                    }
+	                	} else {
+	                		boolean conditionSatisfied =  validateValueInGroupCondition(conditionsTokens, null, targetDatapointDetails, currentDatapointValue);
+	                        if(conditionSatisfied)
+	                            return true;
+	                	}
+	                } else {
+	                    xpathAfterTravelContainer = xpathAfterTravelContainer + targetDatapointSpec.getMismodatapointname();
+	                    NodeList nodeList = getNodeList(parentNode, xpathAfterTravelContainer);
+	                    if(nodeList.getLength()==0) {
+	                        element = null;
+	                        boolean conditionSatisfied =  validateValueInGroupCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                        if(conditionSatisfied)
+	                            return true;
+	                    } else {
+	                        for (int j = 0; j < nodeList.getLength(); j++) {
+	                            element = (Element) nodeList.item(j);
+	                            boolean conditionSatisfied =  validateValueInGroupCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                            if(conditionSatisfied)
+	                                return true;
+	                        } 
+	                    }
+	                }
+	                return false;
+	            } else {
+	                String[] targetXpathSplit = targetDatapointSpec.getMismoxpath().split("/");
+	                String xpathAfterTravelContainer = "";
+	                for(int counter=targetXpathSplit.length - 1; counter >= 0;counter--){
+	                    if( targetXpathSplit[counter].equals(travelContainer))
+	                        break;
+	                    xpathAfterTravelContainer = targetXpathSplit[counter] +"/" + xpathAfterTravelContainer;
+	                }
+	                xpathAfterTravelContainer = xpathAfterTravelContainer + targetDatapointSpec.getMismodatapointname();
+	                NodeList nodeList = getNodeList(node, xpathAfterTravelContainer);
+	                if(nodeList.getLength()==0) {
+	                    element = null;
+	                    boolean conditionSatisfied =  validateValueInGroupCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
+	                    if(conditionSatisfied)
+	                        return true;
+	                } else {
+	                    for (int j = 0; j < nodeList.getLength(); j++) {
+	                        element = (Element) nodeList.item(j);
+	                        boolean conditionSatisfied =  validateValueInGroupCondition(conditionsTokens, element, targetDatapointDetails, currentDatapointValue);
 	                        if(conditionSatisfied)
 	                            return true;
 	                    }
@@ -412,6 +589,83 @@ public class ConditionalDatapointsEvaluation {
                     if(null!=targetElementVal && !targetElementVal.contains(conditionsTokens[2])) {
                     	return true;
                     } else if(null!=targetElementVal && targetElementVal.contains(conditionsTokens[2]) && null==valueOfcurrentNodeinXml) {
+                    	return true;
+                    }
+                }
+                break;
+            case "<": {
+                        if(null==xmlTargetElement) return false;
+                        Double targetElementVal = Double.parseDouble(xmlTargetElement.getTextContent());
+                        Double conditionVal = Double.parseDouble(conditionsTokens[2]);
+                        if(targetElementVal < conditionVal) {
+                            return conditionSatisfied = true;
+                        }
+                      }
+                    break;
+            case ">": {
+                        if(null==xmlTargetElement) return false;
+                        Double targetElementVal = Double.parseDouble(xmlTargetElement.getTextContent());
+                        Double conditionVal = Double.parseDouble(conditionsTokens[2]);
+                        if(targetElementVal > conditionVal) {
+                            return conditionSatisfied = true;
+                        }
+                      }
+                      break;
+            case "<=": {
+                        if(null==xmlTargetElement) return false;
+                        Double targetElementVal = Double.parseDouble(xmlTargetElement.getTextContent());
+                        Double conditionVal = Double.parseDouble(conditionsTokens[2]);
+                        if(targetElementVal <= conditionVal) {
+                            return conditionSatisfied = true;
+                        }
+                       }
+                       break;
+            case ">=": {
+                        if(null==xmlTargetElement) return false;
+                        Double targetElementVal = Double.parseDouble(xmlTargetElement.getTextContent());
+                        Double conditionVal = Double.parseDouble(conditionsTokens[2]);
+                        if(targetElementVal >= conditionVal) {
+                            return conditionSatisfied = true;
+                        }
+                       }
+                       break;
+            default:
+                return conditionSatisfied;
+        }
+        return conditionSatisfied;
+    }
+    
+    public static boolean validateValueInGroupCondition(String[] conditionsTokens, Element xmlTargetElement, DataPointDetails targetDatapointDetails, String valueOfcurrentNodeinXml) {
+        boolean conditionSatisfied = false;
+        switch(conditionsTokens[1]) {
+            case "==" :
+            	if(conditionsTokens[2].equals("NULL")) {
+                    return conditionSatisfied = null == xmlTargetElement ? true : false;
+                } else {
+                    String targetElementVal = null != xmlTargetElement ? xmlTargetElement.getTextContent() : null;
+                    if(conditionsTokens[2].equals(targetElementVal)) {
+                        return conditionSatisfied = true;
+                    }
+                }
+                break;
+            case "!=":
+                if(conditionsTokens[2].equals("NULL")) {
+                    return conditionSatisfied = null != xmlTargetElement ? true : false;
+                } else if(conditionsTokens[2].equals("ENUM")) {
+                    if(!targetDatapointDetails.getEnumValues().contains(valueOfcurrentNodeinXml)) {
+                        return conditionSatisfied = true;
+                    }
+                } else {
+                    String targetElementVal = null != xmlTargetElement ? xmlTargetElement.getTextContent() : null;
+                    if(!conditionsTokens[2].equals(targetElementVal)) {
+                        return conditionSatisfied = true;
+                    }
+                }
+                break;
+            case "!Contains":
+                {
+                    String targetElementVal = null != xmlTargetElement ? xmlTargetElement.getTextContent() : null;
+                    if(null!=targetElementVal && !targetElementVal.contains(conditionsTokens[2])) {
                     	return true;
                     }
                 }
